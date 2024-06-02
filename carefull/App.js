@@ -16,7 +16,7 @@ const HomeScreen = ({ navigateTo }) => (
         </TouchableOpacity>
       </View>
     </View>
-    <View >
+    <View style={{marginBottom:10}}>
       <ImageBackground source={require('./assets/pill_drop.jpg')} styles={styles.backgroundImage}>
     <Text style={{fontSize:30, fontWeight:'bold', padding:"1%"}}>금일 투약 횟수</Text>
     <Text style={styles.daystext}>아침</Text>
@@ -33,6 +33,8 @@ const HomeScreen = ({ navigateTo }) => (
           <Text style={styles.reminderTime}></Text>
         </View>
       </View>
+    </View>
+      <View style={styles.medicationReminder}>
       <Text style={styles.sectionTitle}>약 잔여량</Text>
       <View style={styles.reminderItem}>
         <Image style={styles.reminderIcon} source={require('./assets/pill_00.png')} />
@@ -69,7 +71,7 @@ const HomeScreen = ({ navigateTo }) => (
       <TouchableOpacity onPress={() => navigateTo('Home')}>
         <Image style={styles.bottomIcon} source={require('./assets/Home_Menu.png')} />
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigateTo('User')}>
+      <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
         <Image style={styles.bottomIcon} source={require('./assets/Account.png')} />
       </TouchableOpacity>
     </View>
@@ -77,22 +79,38 @@ const HomeScreen = ({ navigateTo }) => (
 );
 
 const CalendarScreen = ({ navigateTo }) => (
-  <View style={styles.container}>
+  <View style={styles.header}>
     <Text>Calendar Screen</Text>
     <TouchableOpacity onPress={() => navigateTo('Home')}>
       <Text>Go Back</Text>
     </TouchableOpacity>
-    
   </View>
 );
 
 const SettingsScreen = ({ navigateTo }) => (
-  <View style={styles.container}>
-    <Text>Settings Screen</Text>
+  <View style={styles.header}>
     <TouchableOpacity onPress={() => navigateTo('Home')}>
-      <Text>Go Back</Text>
+      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 알림</Text>
     </TouchableOpacity>
   </View>
+);
+
+const UserInfo = ({ navigateTo }) => (
+  <><View style={styles.header}>
+    <TouchableOpacity onPress={() => navigateTo('Home')}>
+      <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 사용자 정보</Text>
+    </TouchableOpacity>
+  </View>
+    <View style={styles.container}>
+      <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>내 정보 관리</Text>
+      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>개인 정보 관리</Text>
+      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>비밀번호 변경</Text>
+      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>사용자 코드</Text>
+      <Text style={{ fontSize: 15, color: "black", marginBottom: 25 }}>보호자 등록</Text>
+      <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>내 정보 관리</Text>
+      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>내 약통 관리</Text>
+    </View></>
+    
 );
 
 const App = () => {
@@ -104,6 +122,8 @@ const App = () => {
         return <CalendarScreen navigateTo={setCurrentScreen} />;
       case 'Settings':
         return <SettingsScreen navigateTo={setCurrentScreen} />;
+      case 'UserInfo':
+        return <UserInfo navigateTo={setCurrentScreen} />;
       case 'Home':
       default:
         return <HomeScreen navigateTo={setCurrentScreen} />;
@@ -124,7 +144,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   daystext: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight:'bold', 
     padding:"1%",
     marginLeft: 5,
@@ -145,6 +165,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
+    color:'black'
   },
   headerIcons: {
     flexDirection: 'row',
@@ -159,6 +180,8 @@ const styles = StyleSheet.create({
     height: 150,
   },
   medicationReminder: {
+    marginTop: 10,
+    marginBottom:10,
     padding: 10,
     backgroundColor: '#e0f7fa',
   },
