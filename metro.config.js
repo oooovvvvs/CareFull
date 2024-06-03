@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
 
 /**
@@ -9,3 +10,8 @@ const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
 const config = {};
 
 module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+=======
+const { getDefaultConfig } = require('metro-config');
+
+module.exports = getDefaultConfig(__dirname);
+>>>>>>> d6482a98fbb0c1aadf6ca84f7f1e0b16cfdee944
