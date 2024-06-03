@@ -108,7 +108,7 @@ const UserInfo = ({ navigateTo }) => (
       <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>사용자 코드</Text>
       <Text style={{ fontSize: 15, color: "black", marginBottom: 25 }}>보호자 등록</Text>
       <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>내 정보 관리</Text>
-      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>내 약통 관리dd</Text>
+      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>내 약통 관리dz</Text>
     </View></>
     
 );
