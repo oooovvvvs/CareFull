@@ -80,9 +80,8 @@ const HomeScreen = ({ navigateTo }) => (
 
 const CalendarScreen = ({ navigateTo }) => (
   <View style={styles.header}>
-    <Text>Calendar Screen</Text>
     <TouchableOpacity onPress={() => navigateTo('Home')}>
-      <Text>Go Back</Text>
+    <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 캘린더</Text>
     </TouchableOpacity>
   </View>
 );
@@ -95,22 +94,69 @@ const SettingsScreen = ({ navigateTo }) => (
   </View>
 );
 
-const UserInfo = ({ navigateTo }) => (
-  <><View style={styles.header}>
-    <TouchableOpacity onPress={() => navigateTo('Home')}>
-      <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 사용자 정보</Text>
+const PrivateScreen = ({ navigateTo }) => (
+  <View style={styles.header}>
+    <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
+      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 개인 정보 관리</Text>
     </TouchableOpacity>
   </View>
+);
+
+const PasswordScreen = ({ navigateTo }) => (
+  <View style={styles.header}>
+    <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
+      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 비밀번호 변경</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+const UsercodeScreen = ({ navigateTo }) => (
+  <View style={styles.header}>
+    <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
+      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 사용자 코드</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+const ParentaccountScreen = ({ navigateTo }) => (
+  <View style={styles.header}>
+    <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
+      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 보호자 등록</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+
+
+const UserInfo = ({ navigateTo }) => (
+  <>
+    <View style={styles.header}>
+      <TouchableOpacity onPress={() => navigateTo('Home')}>
+        <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 사용자 정보</Text>
+      </TouchableOpacity>
+    </View>
     <View style={styles.container}>
       <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>내 정보 관리</Text>
+      
+      <TouchableOpacity onPress={() => navigateTo('Private')}>
       <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>개인 정보 관리</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => navigateTo('Password')}>
       <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>비밀번호 변경</Text>
-      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>사용자 코드</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => navigateTo('Usercode')}>
+        <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>사용자 코드</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => navigateTo('Parentaccount')}>
       <Text style={{ fontSize: 15, color: "black", marginBottom: 25 }}>보호자 등록</Text>
-      <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>내 정보 관리</Text>
-      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>내 약통 관리dz</Text>
-    </View></>
-    
+      </TouchableOpacity>
+      <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>약통 관리</Text>
+      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>내 약통 관리</Text>
+    </View>
+  </>
 );
 
 const App = () => {
@@ -118,13 +164,34 @@ const App = () => {
 
   const renderScreen = () => {
     switch (currentScreen) {
+
+      // 홈 화면 상당
       case 'Calendar':
         return <CalendarScreen navigateTo={setCurrentScreen} />;
+     
       case 'Settings':
         return <SettingsScreen navigateTo={setCurrentScreen} />;
+
+        // 사용자 정보
+      case 'Private':
+          return <PrivateScreen navigateTo={setCurrentScreen} />;
+
+      case 'Password':
+            return <PasswordScreen navigateTo={setCurrentScreen} />;
+
+      case 'Usercode':
+          return <UsercodeScreen navigateTo={setCurrentScreen} />;
+
+      case 'Parentaccount':
+          return <ParentaccountScreen navigateTo={setCurrentScreen} />;
+
+
+
+          // 메인 화면
       case 'UserInfo':
         return <UserInfo navigateTo={setCurrentScreen} />;
-      case 'Home':
+      
+        case 'Home':
       default:
         return <HomeScreen navigateTo={setCurrentScreen} />;
     }
