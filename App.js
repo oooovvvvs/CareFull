@@ -126,6 +126,14 @@ const ParentaccountScreen = ({ navigateTo }) => (
   </View>
 );
 
+const MedicalScreen = ({ navigateTo }) => (
+  <View style={styles.header}>
+    <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
+      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 보호자 등록</Text>
+    </TouchableOpacity>
+  </View>
+);
+
 
 
 const UserInfo = ({ navigateTo }) => (
@@ -154,7 +162,11 @@ const UserInfo = ({ navigateTo }) => (
       <Text style={{ fontSize: 15, color: "black", marginBottom: 25 }}>보호자 등록</Text>
       </TouchableOpacity>
       <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>약통 관리</Text>
+
+      <TouchableOpacity onPress={() => navigateTo('Medical')}>
       <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>내 약통 관리</Text>
+      </TouchableOpacity>
+
     </View>
   </>
 );
@@ -184,6 +196,10 @@ const App = () => {
 
       case 'Parentaccount':
           return <ParentaccountScreen navigateTo={setCurrentScreen} />;
+
+      case 'Medical':
+          return <MedicalScreen navigateTo={setCurrentScreen} />;
+
 
 
 
