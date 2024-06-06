@@ -1,6 +1,6 @@
 // App.js
-import React, { useState, useEffect  } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground } from 'react-native';
+import React, { useState, useEffect, useRef  } from 'react';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert  } from 'react-native';
 import {Calendar, LocaleConfig} from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -114,63 +114,129 @@ const PasswordScreen = ({ navigateTo }) => (
 
 // 16자리 난수 생성 함수
 const generateUserCode = () => {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
-  for (let i = 0; i < 16; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-  return `${result.slice(0, 4)}-${result.slice(4, 8)}-${result.slice(8, 12)}-${result.slice(12, 16)}`;
+  const randomCode = Math.random().toString(36).substr(2, 16).toUpperCase();
+  return `${randomCode.slice(0, 4)}-${randomCode.slice(4, 8)}-${randomCode.slice(8, 12)}-${randomCode.slice(12, 16)}`;
 };
 
+
+//사용자 고유 번호
 const UsercodeScreen = ({ navigateTo }) => {
   const [userCode, setUserCode] = useState('');
 
-  useEffect(() => {
-    const fetchUserCode = async () => {
-      let storedUserCode = await AsyncStorage.getItem('userCode');
-      if (!storedUserCode) {
-        storedUserCode = generateUserCode();
-        await AsyncStorage.setItem('userCode', storedUserCode);
-      }
-      setUserCode(storedUserCode);
-    };
+  // 임의의 사용자 코드 생성
+  const generateUserCode = () => {
+    // 사용자 코드를 무작위 문자열로 생성하는 로직
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const codeLength = 16;
+    let code = '';
+    for (let i = 0; i < codeLength; i++) {
+      code += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return code;
+  };
 
-    fetchUserCode();
+  // 화면 로드 시에 사용자 코드 생성 및 AsyncStorage에 저장
+  useEffect(() => {
+    AsyncStorage.getItem('userCode').then((savedCode) => {
+      if (savedCode) {
+        // AsyncStorage에 이미 사용자 코드가 저장되어 있는 경우
+        setUserCode(savedCode); // 저장된 코드를 사용하여 화면에 표시
+      } else {
+        // AsyncStorage에 사용자 코드가 저장되어 있지 않은 경우
+        const code = generateUserCode(); // 새로운 사용자 코드 생성
+        setUserCode(code); // 화면에 표시
+        AsyncStorage.setItem('userCode', code); // 생성된 코드를 AsyncStorage에 저장
+      }
+    });
   }, []);
+  // 사용자 코드를 4개의 부분으로 나누는 함수
+  const splitUserCode = (code) => {
+    const codeParts = [];
+    for (let i = 0; i < code.length; i += 4) {
+      codeParts.push(code.slice(i, i + 4));
+    }
+    return codeParts;
+  };
 
   return (
     <>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
-          <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 사용자 코드</Text>
+          <Text style={{ fontSize: 30, fontWeight: 'bold', color: 'black' }}>← 사용자 코드</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.container}>
-        <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>사용자 코드</Text>
+        <Text style={{ fontSize: 25, fontWeight: 'bold', color: 'black', marginBottom: 15 }}>사용자 코드</Text>
         <View style={styles.codeContainer}>
-          <Text style={styles.userCodeText}>{userCode}</Text>
+          {splitUserCode(userCode).map((part, index) => (
+            <View key={index} style={styles.codePartContainer}>
+              <Text style={styles.codePart}>{part}</Text>
+            </View>
+          ))}
         </View>
       </View>
     </>
   );
 };
 
-const ParentaccountScreen = ({ navigateTo }) => (
-  <View style={styles.header}>
-    <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
-      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 보호자 등록</Text>
-    </TouchableOpacity>
-  </View>
-);
 
-const MedicalScreen = ({ navigateTo }) => (
-  <View style={styles.header}>
-    <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
-      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 내 약통 관리</Text>
-    </TouchableOpacity>
-  </View>
-);
 
+//보호자 등록
+const ParentaccountScreen = ({ navigateTo }) => {
+  const inputRefs = [useRef(), useRef(), useRef(), useRef()];
+
+  const handleCodeChange = (text, index) => {
+    const newParentCodes = [...parentCodes];
+    newParentCodes[index] = text;
+    setParentCodes(newParentCodes);
+
+    if (text.length === 4 && index < 3) {
+      inputRefs[index + 1].current.focus();
+    }
+  };
+
+  const [parentCodes, setParentCodes] = React.useState(['', '', '', '']);
+
+  const sendRegistrationRequestToParent = async () => {
+    try {
+      const parentCode = parentCodes.join('');
+      await AsyncStorage.setItem('parentCode', parentCode);
+      Alert.alert('보호자 등록 요청을 보냈습니다.');
+    } catch (error) {
+      console.error('보호자 등록 요청 실패:', error);
+      Alert.alert('보호자 등록 요청을 보내지 못했습니다. 나중에 다시 시도해주세요.');
+    }
+  };
+
+  return (
+    <>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
+          <Text style={{ fontSize: 30, fontWeight: 'bold', color: 'black' }}>← 보호자 등록</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.container}>
+        <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>보호자 코드</Text>
+        <View style={styles.inputContainer}>
+          {[0, 1, 2, 3].map((index) => (
+            <React.Fragment key={index}>
+              <TextInput
+                ref={inputRefs[index]}
+                placeholder="0000"
+                maxLength={4}
+                onChangeText={(text) => handleCodeChange(text, index)}
+                value={parentCodes[index]}
+                style={styles.input}
+              />
+              {index < 3 && <Text style={styles.hyphen}>-</Text>}
+            </React.Fragment>
+          ))}
+        </View>
+        <Button title="보호자 등록 요청 보내기" onPress={sendRegistrationRequestToParent} />
+      </View>
+    </>
+  );
+};
 
 
 const UserInfo = ({ navigateTo }) => (
@@ -275,12 +341,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 20,
   },
+ 
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 10,
     backgroundColor: '#fff',
+  },
+
+  // 보호자 코드
+  input: {
+    borderWidth: 1,
+    borderColor: 'black',
+    padding: 10,
+    textAlign: 'center',
+    width: '20%',
+  },
+  inputContainer: {
+    backgroundColor: '#f0f0f0',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 15,
+    width: '100%',
   },
   title: {
     fontSize: 24,
@@ -363,15 +446,25 @@ const styles = StyleSheet.create({
     padding: 20,
     // 스타일을 여기에 정의합니다
   },
+
+  //사용자 코드 컨테이너
   codeContainer: {
     padding: 10,
+    flexDirection: 'row', // 가로 방향으로 정렬
     backgroundColor: '#f0f0f0',
     borderRadius: 5,
     alignItems: 'flex-start',
-    borderBottomWidth: 1, // 아래쪽에 언더바를 추가합니다
     borderColor: '#000', // 언더바 색상을 설정합니다
-    width: '80%', // 너비를 설정합니다 (필요에 따라 조정하세요)
+    width: '100%', // 너비를 설정합니다 (필요에 따라 조정하세요)
     marginBottom: 25, // 하단 여백 추가
+  },
+  codePartContainer: {
+    flex: 1, // 동일한 너비를 가지도록 설정
+    marginHorizontal: 5, // 부분 간 간격 조절
+    borderWidth: 1,
+    borderColor: 'black',
+    padding: 10,
+    alignItems: 'center',
   },
   userCodeText: {
     fontSize: 20,
