@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef  } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert  } from 'react-native';
 import {Calendar, LocaleConfig} from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BleManager } from 'react-native-ble-plx'; // 블루투스 모듈 import
 
 
 const HomeScreen = ({ navigateTo }) => (
@@ -274,20 +275,47 @@ const ParentaccountScreen = ({ navigateTo }) => {
   );
 };
 
-const MedicalScreen = ({ navigateTo }) => (
-  <View style={styles.container}>
-    <View style={styles.header}>
-      <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
-        <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 내 약통 관리</Text>
-      </TouchableOpacity>
+const MedicalScreen = ({ navigateTo }) => {
+  // 블루투스 매니저 인스턴스 생성
+  const bleManager = new BleManager();
+
+  // 약통 등록 버튼을 누를 때 실행되는 함수
+  const handleRegisterPillBox = () => {
+    // 블루투스 디바이스를 스캔하여 연결
+    bleManager.startDeviceScan(null, null, (error, device) => {
+      if (error) {
+        console.error('스캔 중 오류 발생:', error);
+        return;
+      }
+      // 원하는 디바이스를 찾았을 때 연결
+      if (device.name === 'YourPillBoxName') {
+        bleManager.stopDeviceScan(); // 스캔 중지
+        device.connect().then((connectedDevice) => {
+          console.log('디바이스에 연결되었습니다:', connectedDevice);
+          // 여기에 연결된 디바이스와 관련된 추가적인 작업을 수행할 수 있습니다.
+        }).catch((connectError) => {
+          console.error('디바이스 연결 중 오류 발생:', connectError);
+        });
+      }
+    });
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
+          <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 내 약통 관리</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.content}>
+        <TouchableOpacity onPress={handleRegisterPillBox} style={styles.registrationButton}>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', color: "black" }}>내 약통 등록</Text>
+        </TouchableOpacity>
+      </View>
     </View>
-    <View style={styles.content}>
-      <TouchableOpacity onPress={() => navigateTo('약통등록')} style={styles.registrationButton}>
-        <Text style={{ fontSize: 24, fontWeight: 'bold', color: "black" }}>내 약통 등록</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-);
+  );
+};
+
 
 
 
