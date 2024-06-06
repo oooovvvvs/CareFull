@@ -1,7 +1,5 @@
 rootProject.name = 'carefull'
 apply from: file("../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesSettingsGradle(settings)
-include ':react-native-sqlite-storage'
-project(':react-native-sqlite-storage').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-sqlite-storage/src/android')
 include ':app'
 includeBuild('../node_modules/@react-native/gradle-plugin')
 include ':react-native-ble-plx'
