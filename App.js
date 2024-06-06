@@ -112,6 +112,43 @@ const PasswordScreen = ({ navigateTo }) => (
   </View>
 );
 
+
+//사용자 정보
+const UserInfo = ({ navigateTo }) => (
+  <>
+    <View style={styles.header}>
+      <TouchableOpacity onPress={() => navigateTo('Home')}>
+        <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 사용자 정보</Text>
+      </TouchableOpacity>
+    </View>
+    <View style={styles.container}>
+      <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>내 정보 관리</Text>
+      
+      <TouchableOpacity onPress={() => navigateTo('Private')}>
+      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>개인 정보 관리</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => navigateTo('Password')}>
+      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>비밀번호 변경</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => navigateTo('Usercode')}>
+        <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>사용자 코드</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => navigateTo('Parentaccount')}>
+      <Text style={{ fontSize: 15, color: "black", marginBottom: 25 }}>보호자 등록</Text>
+      </TouchableOpacity>
+      <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>약통 관리</Text>
+
+      <TouchableOpacity onPress={() => navigateTo('Medical')}>
+      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>내 약통 관리</Text>
+      </TouchableOpacity>
+
+    </View>
+  </>
+);
+
 // 16자리 난수 생성 함수
 const generateUserCode = () => {
   const randomCode = Math.random().toString(36).substr(2, 16).toUpperCase();
@@ -135,7 +172,7 @@ const UsercodeScreen = ({ navigateTo }) => {
     return code;
   };
 
-  // 화면 로드 시에 사용자 코드 생성 및 AsyncStorage에 저장
+  // 사용자 코드 생성 및 AsyncStorage에 저장
   useEffect(() => {
     AsyncStorage.getItem('userCode').then((savedCode) => {
       if (savedCode) {
@@ -178,7 +215,6 @@ const UsercodeScreen = ({ navigateTo }) => {
     </>
   );
 };
-
 
 
 //보호자 등록
@@ -238,41 +274,16 @@ const ParentaccountScreen = ({ navigateTo }) => {
   );
 };
 
-
-const UserInfo = ({ navigateTo }) => (
-  <>
-    <View style={styles.header}>
-      <TouchableOpacity onPress={() => navigateTo('Home')}>
-        <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 사용자 정보</Text>
-      </TouchableOpacity>
-    </View>
-    <View style={styles.container}>
-      <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>내 정보 관리</Text>
-      
-      <TouchableOpacity onPress={() => navigateTo('Private')}>
-      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>개인 정보 관리</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigateTo('Password')}>
-      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>비밀번호 변경</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigateTo('Usercode')}>
-        <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>사용자 코드</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigateTo('Parentaccount')}>
-      <Text style={{ fontSize: 15, color: "black", marginBottom: 25 }}>보호자 등록</Text>
-      </TouchableOpacity>
-      <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>약통 관리</Text>
-
-      <TouchableOpacity onPress={() => navigateTo('Medical')}>
-      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>내 약통 관리</Text>
-      </TouchableOpacity>
-
-    </View>
-  </>
+const MedicalScreen = ({ navigateTo }) => (
+  <View style={styles.header}>
+    <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
+      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 내 약통 관리</Text>
+    </TouchableOpacity>
+  </View>
 );
+
+
+
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('Home');
