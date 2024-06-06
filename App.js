@@ -275,10 +275,17 @@ const ParentaccountScreen = ({ navigateTo }) => {
 };
 
 const MedicalScreen = ({ navigateTo }) => (
-  <View style={styles.header}>
-    <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
-      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 내 약통 관리</Text>
-    </TouchableOpacity>
+  <View style={styles.container}>
+    <View style={styles.header}>
+      <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
+        <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 내 약통 관리</Text>
+      </TouchableOpacity>
+    </View>
+    <View style={styles.content}>
+      <TouchableOpacity onPress={() => navigateTo('약통등록')} style={styles.registrationButton}>
+        <Text style={{ fontSize: 24, fontWeight: 'bold', color: "black" }}>내 약통 등록</Text>
+      </TouchableOpacity>
+    </View>
   </View>
 );
 
@@ -480,7 +487,14 @@ const styles = StyleSheet.create({
   userCodeText: {
     fontSize: 20,
     color: "black"
-  }
+  },
+
+  content: {
+    justifyContent: 'center',
+    alignItems: 'flex-end', // 오른쪽 정렬로 변경
+    marginVertical: 30, // 버튼을 아래로 내릴 수 있는 여백 조절
+  },
+  
   
 });
 
