@@ -1,7 +1,9 @@
 // App.js
-import React, { useState } from 'react';
+import React, { useState, useEffect  } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground } from 'react-native';
 import {Calendar, LocaleConfig} from 'react-native-calendars';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const HomeScreen = ({ navigateTo }) => (
   <ScrollView style={styles.container}>
@@ -110,13 +112,48 @@ const PasswordScreen = ({ navigateTo }) => (
   </View>
 );
 
-const UsercodeScreen = ({ navigateTo }) => (
-  <View style={styles.header}>
-    <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
-      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 사용자 코드</Text>
-    </TouchableOpacity>
-  </View>
-);
+// 16자리 난수 생성 함수
+const generateUserCode = () => {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < 16; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return `${result.slice(0, 4)}-${result.slice(4, 8)}-${result.slice(8, 12)}-${result.slice(12, 16)}`;
+};
+
+const UsercodeScreen = ({ navigateTo }) => {
+  const [userCode, setUserCode] = useState('');
+
+  useEffect(() => {
+    const fetchUserCode = async () => {
+      let storedUserCode = await AsyncStorage.getItem('userCode');
+      if (!storedUserCode) {
+        storedUserCode = generateUserCode();
+        await AsyncStorage.setItem('userCode', storedUserCode);
+      }
+      setUserCode(storedUserCode);
+    };
+
+    fetchUserCode();
+  }, []);
+
+  return (
+    <>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
+          <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 사용자 코드</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.container}>
+        <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>사용자 코드</Text>
+        <View style={styles.codeContainer}>
+          <Text style={styles.userCodeText}>{userCode}</Text>
+        </View>
+      </View>
+    </>
+  );
+};
 
 const ParentaccountScreen = ({ navigateTo }) => (
   <View style={styles.header}>
@@ -129,7 +166,7 @@ const ParentaccountScreen = ({ navigateTo }) => (
 const MedicalScreen = ({ navigateTo }) => (
   <View style={styles.header}>
     <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
-      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 보호자 등록</Text>
+      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 내 약통 관리</Text>
     </TouchableOpacity>
   </View>
 );
@@ -318,6 +355,27 @@ const styles = StyleSheet.create({
   bottomIcon: {
     width: 24,
     height: 24,
+  },
+  header: {
+    // 스타일을 여기에 정의합니다
+  },
+  container: {
+    padding: 20,
+    // 스타일을 여기에 정의합니다
+  },
+  codeContainer: {
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+    alignItems: 'flex-start',
+    borderBottomWidth: 1, // 아래쪽에 언더바를 추가합니다
+    borderColor: '#000', // 언더바 색상을 설정합니다
+    width: '80%', // 너비를 설정합니다 (필요에 따라 조정하세요)
+    marginBottom: 25, // 하단 여백 추가
+  },
+  userCodeText: {
+    fontSize: 20,
+    color: "black"
   }
   
 });
