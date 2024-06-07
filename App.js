@@ -1,9 +1,10 @@
 // App.js
 import React, { useState, useEffect, useRef  } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert  } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform  } from 'react-native';
 import {Calendar, LocaleConfig} from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BleManager } from 'react-native-ble-plx'; // 블루투스 모듈 import
+import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 
 
 const HomeScreen = ({ navigateTo }) => (
@@ -275,6 +276,38 @@ const ParentaccountScreen = ({ navigateTo }) => {
   );
 };
 
+const requestBluetoothPermission = async () => {
+  if (Platform.OS === 'android') {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: '블루투스를 위한 위치 권한',
+          message: '이 앱은 블루투스 기기를 스캔하기 위해 위치 권한이 필요합니다.',
+          buttonNeutral: '나중에 묻기',
+          buttonNegative: '취소',
+          buttonPositive: '확인',
+        },
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        console.log('위치 권한이 부여되었습니다.');
+      } else {
+        console.log('위치 권한이 거부되었습니다.');
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+  } else if (Platform.OS === 'ios') {
+    const status = await check(PERMISSIONS.IOS.BLUETOOTH_PERIPHERAL);
+    if (status !== RESULTS.GRANTED) {
+      const result = await request(PERMISSIONS.IOS.BLUETOOTH_PERIPHERAL);
+      if (result !== RESULTS.GRANTED) {
+        Alert.alert('권한 거부', '권한 없이 블루투스를 사용할 수 없습니다.');
+      }
+    }
+  }
+};
+
 const MedicalScreen = ({ navigateTo }) => {
   // 블루투스 매니저 인스턴스 생성
   const bleManager = new BleManager();
@@ -417,6 +450,7 @@ const styles = StyleSheet.create({
     color:'black'
   },
   headerIcons: {
+    justifyContent: 'flex-end',
     flexDirection: 'row',
   },
   icon: {
