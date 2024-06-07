@@ -190,7 +190,9 @@ const UsercodeScreen = ({ navigateTo }) => {
         setUserCode(code); // 화면에 표시
         AsyncStorage.setItem('userCode', code); // 생성된 코드를 AsyncStorage에 저장
         firebase.database().ref('/userCodes').push({ userCode: code }); // Firebase에 저장
+
       }
+    
     });
   }, []);
 
