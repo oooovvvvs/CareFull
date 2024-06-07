@@ -5,7 +5,22 @@ import {Calendar, LocaleConfig} from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BleManager } from 'react-native-ble-plx'; // 블루투스 모듈 import
 import { request, PERMISSIONS } from 'react-native-permissions';
+import firebase from '@react-native-firebase/app';
+import '@react-native-firebase/database';
 
+
+//파이어베이스 
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    apiKey: 'AIzaSyDb7voCfYlMEUFfVEu7mqxBNS8VV5xy-q0',
+    authDomain: 'carefull-74e61.firebaseapp.com',
+    databaseURL: 'https://carefull-74e61-default-rtdb.firebaseio.com',
+    projectId: 'carefull-74e61',
+    storageBucket: 'carefull-74e61.appspot.com',
+    messagingSenderId: '414598808103',
+    appId: '1:414598808103:android:ebcf006c169f2803b44402',
+  });
+}
 
 const HomeScreen = ({ navigateTo }) => (
   <ScrollView style={styles.container}>
@@ -153,41 +168,32 @@ const UserInfo = ({ navigateTo }) => (
 
 // 16자리 난수 생성 함수
 const generateUserCode = () => {
-  const randomCode = Math.random().toString(36).substr(2, 16).toUpperCase();
-  return `${randomCode.slice(0, 4)}-${randomCode.slice(4, 8)}-${randomCode.slice(8, 12)}-${randomCode.slice(12, 16)}`;
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const codeLength = 16;
+  let code = '';
+  for (let i = 0; i < codeLength; i++) {
+    code += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return code;
 };
 
-
-//사용자 고유 번호
+// 사용자 코드 화면 컴포넌트
 const UsercodeScreen = ({ navigateTo }) => {
   const [userCode, setUserCode] = useState('');
 
-  // 임의의 사용자 코드 생성
-  const generateUserCode = () => {
-    // 사용자 코드를 무작위 문자열로 생성하는 로직
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    const codeLength = 16;
-    let code = '';
-    for (let i = 0; i < codeLength; i++) {
-      code += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return code;
-  };
-
-  // 사용자 코드 생성 및 AsyncStorage에 저장
   useEffect(() => {
     AsyncStorage.getItem('userCode').then((savedCode) => {
       if (savedCode) {
-        // AsyncStorage에 이미 사용자 코드가 저장되어 있는 경우
         setUserCode(savedCode); // 저장된 코드를 사용하여 화면에 표시
       } else {
-        // AsyncStorage에 사용자 코드가 저장되어 있지 않은 경우
         const code = generateUserCode(); // 새로운 사용자 코드 생성
         setUserCode(code); // 화면에 표시
         AsyncStorage.setItem('userCode', code); // 생성된 코드를 AsyncStorage에 저장
+        firebase.database().ref('/userCodes').push({ userCode: code }); // Firebase에 저장
       }
     });
   }, []);
+
   // 사용자 코드를 4개의 부분으로 나누는 함수
   const splitUserCode = (code) => {
     const codeParts = [];
