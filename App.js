@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackg
 import {Calendar, LocaleConfig} from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BleManager } from 'react-native-ble-plx'; // 블루투스 모듈 import
-import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
+import { request, PERMISSIONS } from 'react-native-permissions';
 
 
 const HomeScreen = ({ navigateTo }) => (
@@ -276,62 +276,93 @@ const ParentaccountScreen = ({ navigateTo }) => {
   );
 };
 
-const requestBluetoothPermission = async () => {
-  if (Platform.OS === 'android') {
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        {
-          title: '블루투스를 위한 위치 권한',
-          message: '이 앱은 블루투스 기기를 스캔하기 위해 위치 권한이 필요합니다.',
-          buttonNeutral: '나중에 묻기',
-          buttonNegative: '취소',
-          buttonPositive: '확인',
-        },
-      );
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        console.log('위치 권한이 부여되었습니다.');
-      } else {
-        console.log('위치 권한이 거부되었습니다.');
-      }
-    } catch (err) {
-      console.warn(err);
-    }
-  } else if (Platform.OS === 'ios') {
-    const status = await check(PERMISSIONS.IOS.BLUETOOTH_PERIPHERAL);
-    if (status !== RESULTS.GRANTED) {
-      const result = await request(PERMISSIONS.IOS.BLUETOOTH_PERIPHERAL);
-      if (result !== RESULTS.GRANTED) {
-        Alert.alert('권한 거부', '권한 없이 블루투스를 사용할 수 없습니다.');
-      }
-    }
-  }
-};
-
 const MedicalScreen = ({ navigateTo }) => {
-  // 블루투스 매니저 인스턴스 생성
-  const bleManager = new BleManager();
+  const bleManagerRef = useRef(new BleManager());
+  const [isScanning, setIsScanning] = useState(false);
 
-  // 약통 등록 버튼을 누를 때 실행되는 함수
-  const handleRegisterPillBox = () => {
-    // 블루투스 디바이스를 스캔하여 연결
-    bleManager.startDeviceScan(null, null, (error, device) => {
-      if (error) {
-        console.error('스캔 중 오류 발생:', error);
-        return;
-      }
-      // 원하는 디바이스를 찾았을 때 연결
-      if (device.name === 'YourPillBoxName') {
-        bleManager.stopDeviceScan(); // 스캔 중지
-        device.connect().then((connectedDevice) => {
-          console.log('디바이스에 연결되었습니다:', connectedDevice);
-          // 여기에 연결된 디바이스와 관련된 추가적인 작업을 수행할 수 있습니다.
-        }).catch((connectError) => {
-          console.error('디바이스 연결 중 오류 발생:', connectError);
-        });
-      }
-    });
+  const requestBluetoothPermissions = async () => {
+    if (Platform.OS === 'android') {
+      const granted = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      ]);
+
+      return (
+        granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] === PermissionsAndroid.RESULTS.GRANTED &&
+        granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] === PermissionsAndroid.RESULTS.GRANTED &&
+        granted[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED
+      );
+    } else if (Platform.OS === 'ios') {
+      const granted = await request(PERMISSIONS.IOS.BLUETOOTH_PERIPHERAL);
+      return granted === 'granted';
+    }
+    return false;
   };
+
+  const checkBluetoothState = async () => {
+    const state = await bleManagerRef.current.state();
+    if (state !== 'PoweredOn') {
+      Alert.alert('Bluetooth 필요', '블루투스를 켜주세요.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleRegisterPillBox = async () => {
+    const hasPermission = await requestBluetoothPermissions();
+    if (!hasPermission) {
+      Alert.alert('권한 필요', '블루투스 권한이 필요합니다.');
+      return;
+    }
+
+    const isBluetoothOn = await checkBluetoothState();
+    if (!isBluetoothOn) {
+      return;
+    }
+
+    try {
+      if (isScanning) {
+        bleManagerRef.current.stopDeviceScan();
+      }
+
+      setIsScanning(true);
+
+      bleManagerRef.current.startDeviceScan(null, null, (error, device) => {
+        if (error) {
+          console.error('스캔 중 오류 발생:', error);
+          Alert.alert('스캔 오류', '블루투스 스캔 중 오류가 발생했습니다.');
+          setIsScanning(false);
+          return;
+        }
+
+        if (device && device.name === 'YourPillBoxName') {
+          bleManagerRef.current.stopDeviceScan();
+          setIsScanning(false);
+          device.connect().then((connectedDevice) => {
+            console.log('디바이스에 연결되었습니다:', connectedDevice);
+          }).catch((connectError) => {
+            console.error('디바이스 연결 중 오류 발생:', connectError);
+            Alert.alert('연결 오류', '디바이스 연결 중 오류가 발생했습니다.');
+          });
+        }
+      });
+    } catch (error) {
+      console.error('블루투스 스캔 시작 오류:', error);
+      Alert.alert('스캔 시작 오류', '블루투스 스캔을 시작하는 동안 오류가 발생했습니다.');
+      setIsScanning(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (isScanning) {
+        bleManagerRef.current.stopDeviceScan();
+        setIsScanning(false);
+      }
+      bleManagerRef.current.destroy();
+    };
+  }, [isScanning]);
 
   return (
     <View style={styles.container}>
@@ -348,10 +379,6 @@ const MedicalScreen = ({ navigateTo }) => {
     </View>
   );
 };
-
-
-
-
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('Home');
