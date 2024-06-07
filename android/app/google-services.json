@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "414598808103",
+    "project_id": "carefull-74e61",
+    "storage_bucket": "carefull-74e61.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:414598808103:android:ebcf006c169f2803b44402",
+        "android_client_info": {
+          "package_name": "com.carefull"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDb7voCfYlMEUFfVEu7mqxBNS8VV5xy-q0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
