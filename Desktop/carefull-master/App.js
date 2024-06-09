@@ -1,7 +1,15 @@
 // App.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground } from 'react-native';
-import {Calendar, LocaleConfig} from 'react-native-calendars';
+import { Calendar, LocaleConfig } from 'react-native-calendars';
+
+const SplashScreen = () => {
+  return (
+    <View style={styles.splashContainer}>
+      <Text style={styles.splashTitle}>Carefull</Text>
+    </View>
+  );
+};
 
 const HomeScreen = ({ navigateTo }) => (
   <ScrollView style={styles.container}>
@@ -16,13 +24,13 @@ const HomeScreen = ({ navigateTo }) => (
         </TouchableOpacity>
       </View>
     </View>
-    <View style={{marginBottom:10}}>
-      <ImageBackground source={require('./assets/pill_drop.jpg')} styles={styles.backgroundImage}>
-    <Text style={{fontSize:30, fontWeight:'bold', padding:"1%"}}>금일 투약 횟수</Text>
-    <Text style={styles.daystext}>아침</Text>
-    <Text style={styles.daystext}>점심</Text>
-    <Text style={styles.daystext}>저녁</Text>
-    </ImageBackground>
+    <View style={{ marginBottom: 10 }}>
+      <ImageBackground source={require('./assets/pill_drop.jpg')} style={styles.backgroundImage}>
+        <Text style={{ fontSize: 30, fontWeight: 'bold', padding: '1%' }}>금일 투약 횟수</Text>
+        <Text style={styles.daystext}>아침</Text>
+        <Text style={styles.daystext}>점심</Text>
+        <Text style={styles.daystext}>어제</Text>
+      </ImageBackground>
     </View>
     <View style={styles.medicationReminder}>
       <Text style={styles.sectionTitle}>투약 알림</Text>
@@ -34,7 +42,7 @@ const HomeScreen = ({ navigateTo }) => (
         </View>
       </View>
     </View>
-      <View style={styles.medicationReminder}>
+    <View style={styles.medicationReminder}>
       <Text style={styles.sectionTitle}>약 잔여량</Text>
       <View style={styles.reminderItem}>
         <Image style={styles.reminderIcon} source={require('./assets/pill_00.png')} />
@@ -90,17 +98,18 @@ const CalendarScreen = ({ navigateTo }) => (
 const SettingsScreen = ({ navigateTo }) => (
   <View style={styles.header}>
     <TouchableOpacity onPress={() => navigateTo('Home')}>
-      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 알림</Text>
+      <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 알림</Text>
     </TouchableOpacity>
   </View>
 );
 
 const UserInfo = ({ navigateTo }) => (
-  <><View style={styles.header}>
-    <TouchableOpacity onPress={() => navigateTo('Home')}>
-      <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 사용자 정보</Text>
-    </TouchableOpacity>
-  </View>
+  <>
+    <View style={styles.header}>
+      <TouchableOpacity onPress={() => navigateTo('Home')}>
+        <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 사용자 정보</Text>
+      </TouchableOpacity>
+    </View>
     <View style={styles.container}>
       <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>내 정보 관리</Text>
       <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>개인 정보 관리</Text>
@@ -109,14 +118,27 @@ const UserInfo = ({ navigateTo }) => (
       <Text style={{ fontSize: 15, color: "black", marginBottom: 25 }}>보호자 등록</Text>
       <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>내 정보 관리</Text>
       <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>내 약통 관리dz</Text>
-    </View></>
-    
+    </View>
+  </>
 );
 
 const App = () => {
-  const [currentScreen, setCurrentScreen] = useState('Home');
+  const [currentScreen, setCurrentScreen] = useState('Splash');
+  const [isSplashVisible, setIsSplashVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsSplashVisible(false);
+      setCurrentScreen('Home');
+    }, 1000); // 1초 후에 Splash 화면 숨김
+
+    return () => clearTimeout(timer); // 컴포넌트가 언마운트될 때 타이머 정리
+  }, []);
 
   const renderScreen = () => {
+    if (isSplashVisible) {
+      return <SplashScreen />;
+    }
     switch (currentScreen) {
       case 'Calendar':
         return <CalendarScreen navigateTo={setCurrentScreen} />;
@@ -138,6 +160,17 @@ const App = () => {
 };
 
 const styles = StyleSheet.create({
+  splashContainer:{
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  splashTitle:{
+    fontSize: 24,
+    fontWeight: 'bold',
+    color:'black',
+    textalign: 'center'
+  },
   backgroundImage: {
     flex: 2,
     resizeMode: 'cover',

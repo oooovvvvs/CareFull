@@ -97,13 +97,36 @@ const HomeScreen = ({ navigateTo }) => (
   </ScrollView>
 );
 
-const CalendarScreen = ({ navigateTo }) => (
-  <View style={styles.header}>
-    <TouchableOpacity onPress={() => navigateTo('Home')}>
-    <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 캘린더</Text>
-    </TouchableOpacity>
-  </View>
-);
+const CalendarScreen = ({ navigateTo }) => {
+  LocaleConfig.locales['kr'] = {
+    monthNames: [
+      '1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'
+    ],
+    monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+    dayNames: ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'],
+    dayNamesShort: ['일', '월', '화', '수', '목', '금', '토'],
+    today: "오늘"
+  };
+  
+  LocaleConfig.defaultLocale = 'kr';
+  const [selected, setSelected] = useState('');
+  return (
+    <><View style={styles.header}>
+      <TouchableOpacity onPress={() => navigateTo('Home')}>
+        <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 캘린더</Text>
+      </TouchableOpacity>
+    </View>
+    <View style={styles.Calendar}>
+        <Calendar
+          onDayPress={day => {
+            setSelected(day.dateString);
+          } }
+          markedDates={{
+            [selected]: { selected: true, disableTouchEvent: true, selectedDotColor: 'orange' }
+          }} />
+      </View></>
+  );
+};
 
 const SettingsScreen = ({ navigateTo }) => (
   <View style={styles.header}>
@@ -474,7 +497,7 @@ const App = () => {
       // 홈 화면 상당
       case 'Calendar':
         return <CalendarScreen navigateTo={setCurrentScreen} />;
-     
+
       case 'Settings':
         return <SettingsScreen navigateTo={setCurrentScreen} />;
 
@@ -543,7 +566,7 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#fff',
   },
-
+  
   nicknamebox: {
     
     padding: 10,
@@ -551,6 +574,12 @@ const styles = StyleSheet.create({
     width: '80%',
   },
 
+  Calendar: {
+    flex: 1,
+    backgroundColor: '#fff',
+    dayTextAtIndex0: { color: 'red'},
+    datTextAtOmdex6: { color:'blue'}
+  },
 
   // 보호자 코드
   input: {
@@ -679,6 +708,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end', // 오른쪽 정렬로 변경
     marginVertical: 30, // 버튼을 아래로 내릴 수 있는 여백 조절
   },
+  
   
   
 });
