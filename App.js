@@ -139,6 +139,31 @@ const SettingsScreen = ({ navigateTo }) => (
 // 개인정보 관리
 const PrivateScreen = ({ navigateTo }) => {
   const [name, setName] = useState('');
+  const [userCode, setUserCode] = useState('');
+
+
+  useEffect(() => {
+    AsyncStorage.getItem('userCode')
+      .then((savedCode) => {
+        if (savedCode) {
+          console.log('저장된 사용자 코드:', savedCode);
+          setUserCode(savedCode); // 저장된 코드를 사용하여 화면에 표시
+        }
+      })
+      .catch(error => {
+        console.log('AsyncStorage에서 사용자 코드를 가져오는 중 오류 발생:', error);
+      });
+  }, []);
+
+  // 사용자 코드를 4개의 부분으로 나누는 함수
+  const splitUserCode = (code) => {
+    const codeParts = [];
+    for (let i = 0; i < code.length; i += 4) {
+      codeParts.push(code.slice(i, i + 4));
+    }
+    return codeParts;
+  };
+
 
   useEffect(() => {
     const loadName = async () => {
@@ -151,16 +176,33 @@ const PrivateScreen = ({ navigateTo }) => {
   }, []);
 
   return (
+    <>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
+          <Text style={{ fontSize: 30, fontWeight: 'bold', color: 'black' }}>← 사용자 코드</Text>
+        </TouchableOpacity>
+      </View>
+    
+    
     <View style={styles.header}>
-      <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
-        <Text style={{ fontSize: 30, fontWeight: 'bold', color: 'black' }}>← 개인 정보 관리</Text>
-      </TouchableOpacity>
-      
+  
       <View style={styles.nickname}>
       <Text style={{ fontSize: 25, fontWeight: 'bold', color: 'black', marginBottom: 15 }}>닉네임: {name}</Text>
 
       </View>
+
+      <View style={styles.container}>
+        <Text style={{ fontSize: 25, fontWeight: 'bold', color: 'black', marginBottom: 15 }}>사용자 코드</Text>
+        <View style={styles.codeContainer}>
+          {splitUserCode(userCode).map((part, index) => (
+            <View key={index} style={styles.codePartContainer}>
+              <Text style={styles.codePart}>{part}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
     </View>
+    </>
   );
 };
 
@@ -211,8 +253,8 @@ const UserInfo = ({ navigateTo }) => (
       <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>개인 정보 관리</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigateTo('Usercode')}>
-        <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>사용자 코드</Text>
+      <TouchableOpacity onPress={() => navigateTo('Password')}>
+      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>비밀번호 변경</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigateTo('Parentaccount')}>
@@ -239,53 +281,6 @@ const generateUserCode = () => {
   return code;
 };
 
-const UsercodeScreen = ({ navigateTo }) => {
-  const [userCode, setUserCode] = useState('');
-
-  useEffect(() => {
-    AsyncStorage.getItem('userCode')
-      .then((savedCode) => {
-        if (savedCode) {
-          console.log('저장된 사용자 코드:', savedCode);
-          setUserCode(savedCode); // 저장된 코드를 사용하여 화면에 표시
-        }
-      })
-      .catch(error => {
-        console.log('AsyncStorage에서 사용자 코드를 가져오는 중 오류 발생:', error);
-      });
-  }, []);
-
-  // 사용자 코드를 4개의 부분으로 나누는 함수
-  const splitUserCode = (code) => {
-    const codeParts = [];
-    for (let i = 0; i < code.length; i += 4) {
-      codeParts.push(code.slice(i, i + 4));
-    }
-    return codeParts;
-  };
-
-  return (
-    <>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
-          <Text style={{ fontSize: 30, fontWeight: 'bold', color: 'black' }}>← 사용자 코드</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.container}>
-        <Text style={{ fontSize: 25, fontWeight: 'bold', color: 'black', marginBottom: 15 }}>사용자 코드</Text>
-        <View style={styles.codeContainer}>
-          {splitUserCode(userCode).map((part, index) => (
-            <View key={index} style={styles.codePartContainer}>
-              <Text style={styles.codePart}>{part}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    </>
-  );
-};
-
-
 //보호자 등록
 const ParentaccountScreen = ({ navigateTo }) => {
   const inputRefs = [useRef(), useRef(), useRef(), useRef()];
@@ -302,16 +297,32 @@ const ParentaccountScreen = ({ navigateTo }) => {
 
   const [parentCodes, setParentCodes] = React.useState(['', '', '', '']);
 
-  const sendRegistrationRequestToParent = async () => {
-    try {
-      const parentCode = parentCodes.join('');
-      await AsyncStorage.setItem('parentCode', parentCode);
-      Alert.alert('보호자 등록 요청을 보냈습니다.');
-    } catch (error) {
-      console.error('보호자 등록 요청 실패:', error);
-      Alert.alert('보호자 등록 요청을 보내지 못했습니다. 나중에 다시 시도해주세요.');
+ // 상대방의 고유 코드를 검색하여 사용자를 찾고 알림을 전송하는 함수
+const sendNotificationToParent = async (parentCode) => {
+  try {
+    // Firebase Realtime Database에서 상대방의 고유 코드로 사용자를 검색합니다.
+    const snapshot = await database().ref('userCodes').orderByChild('parentCode').equalTo(parentCode).once('value');
+    const user = snapshot.val();
+
+    if (user) {
+      // 사용자를 찾았으면 알림을 전송합니다.
+      // 여기에서 FCM 또는 다른 푸시 알림 서비스를 사용하여 알림을 전송합니다.
+      // sendNotificationToUser(user);
+      Alert.alert(`보호자 등록 요청을 보냈습니다.`);
+    } else {
+      Alert.alert('유효하지 않은 보호자 코드입니다.');
     }
-  };
+  } catch (error) {
+    console.error('알림을 전송하는 중 오류 발생:', error);
+    Alert.alert('알림을 전송하는 중 오류가 발생했습니다. 나중에 다시 시도해주세요.');
+  }
+};
+
+// 보호자 등록 요청 보내기 버튼 클릭 시 호출되는 함수
+const sendRegistrationRequestToParent = () => {
+  const parentCode = parentCodes.join('');
+  sendNotificationToParent(parentCode);
+};
 
   return (
     <>
@@ -479,8 +490,6 @@ const App = () => {
       case 'Password':
             return <PasswordScreen navigateTo={setCurrentScreen} />;
 
-      case 'Usercode':
-          return <UsercodeScreen navigateTo={setCurrentScreen} />;
 
       case 'Parentaccount':
           return <ParentaccountScreen navigateTo={setCurrentScreen} />;
