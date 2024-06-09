@@ -206,16 +206,6 @@ const PrivateScreen = ({ navigateTo }) => {
   );
 };
 
-const PasswordScreen = ({ navigateTo }) => (
-  <View style={styles.header}>
-    <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
-      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 비밀번호 변경</Text>
-    </TouchableOpacity>
-    
-  </View>
-);
-
-
 //닉네임 입력
 const NameInputScreen = ({ navigateTo }) => {
   const [name, setName] = useState('');
@@ -260,10 +250,6 @@ const UserInfo = ({ navigateTo }) => (
       
       <TouchableOpacity onPress={() => navigateTo('Private')}>
       <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>개인 정보 관리</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigateTo('Password')}>
-      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>비밀번호 변경</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigateTo('Parentaccount')}>
@@ -496,10 +482,7 @@ const App = () => {
       case 'Private':
           return <PrivateScreen navigateTo={setCurrentScreen} />;
 
-      case 'Password':
-            return <PasswordScreen navigateTo={setCurrentScreen} />;
-
-
+    
       case 'Parentaccount':
           return <ParentaccountScreen navigateTo={setCurrentScreen} />;
 
