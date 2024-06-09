@@ -11,6 +11,10 @@ import 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
+//스택용 임포트
+
+
+
 
 //파이어베이스 
 if (!firebase.apps.length) {
@@ -458,98 +462,57 @@ const MedicalScreen = ({ navigateTo }) => {
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('Home');
-  const [exitApp, setExitApp] = useState(false);
 
   useEffect(() => {
-    // 앱이 처음 실행될 때 사용자의 닉네임이 설정되어 있는지 확인합니다.
     const checkUserName = async () => {
       const userName = await AsyncStorage.getItem('userName');
       if (userName) {
-        // 닉네임이 설정되어 있으면 홈 화면으로 이동합니다.
         setCurrentScreen('Home');
       } else {
-        // 닉네임이 설정되어 있지 않으면 닉네임 입력 화면으로 이동합니다.
         setCurrentScreen('NameInput');
       }
     };
     checkUserName();
+  }, []);
 
-    // 뒤로가기 버튼을 눌렀을 때의 동작을 정의합니다.
-    const backAction = () => {
-      if (currentScreen !== 'Home') {
-        // 현재 화면이 홈 화면이 아니면 홈 화면으로 이동합니다.
-        setCurrentScreen('Home');
-      } else {
-        // 현재 화면이 홈 화면이면 종료 확인 토스트 메시지를 표시합니다.
-        if (exitApp) {
-          BackHandler.exitApp();
-        } else {
-          Toast.show('한 번 더 누르면 종료됩니다.', {
-            duration: Toast.durations.SHORT,
-            position: Toast.positions.BOTTOM,
-            shadow: true,
-            animation: true,
-            hideOnPress: true,
-            delay: 0,
-          });
-          setExitApp(true);
-          setTimeout(() => {
-            setExitApp(false);
-          }, 2000); // 2초 동안 유효
-        }
-      }
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      backAction
-    );
-
-    return () => backHandler.remove();
-  }, [currentScreen, exitApp]);
-
-  // 현재 화면에 따라 다른 컴포넌트를 렌더링합니다.
   const renderScreen = () => {
     switch (currentScreen) {
 
-      //닉네임 입력
-      case 'NameInput':
-        return <NameInputScreen navigateTo={setCurrentScreen} />;
-
-      // 캘린더 
+      // 홈 화면 상단
       case 'Calendar':
         return <CalendarScreen navigateTo={setCurrentScreen} />;
 
-      // 알림
       case 'Settings':
-      return <SettingsScreen navigateTo={setCurrentScreen} />;
+        return <SettingsScreen navigateTo={setCurrentScreen} />;
 
-       // 사용자 정보
-       case 'UserInfo':
-        return <UserInfo navigateTo={setCurrentScreen} />;
-   
-      //개인정보 관리
+        // 사용자 정보
       case 'Private':
-        return <PrivateScreen navigateTo={setCurrentScreen} />;
+          return <PrivateScreen navigateTo={setCurrentScreen} />;
 
-      //부모님 등록
+    
       case 'Parentaccount':
-        return <ParentaccountScreen navigateTo={setCurrentScreen} />;
+          return <ParentaccountScreen navigateTo={setCurrentScreen} />;
 
-      // 내 약통 관리
       case 'Medical':
-        return <MedicalScreen navigateTo={setCurrentScreen} />;
-        
-     
-      // 메인 화면
-      case 'Home':
+          return <MedicalScreen navigateTo={setCurrentScreen} />;
+
+
+      case 'NameInput':
+          return <NameInputScreen navigateTo={setCurrentScreen} />;
+
+
+          // 메인 화면
+      case 'UserInfo':
+        return <UserInfo navigateTo={setCurrentScreen} />;
+      
+        case 'Home':
       default:
         return <HomeScreen navigateTo={setCurrentScreen} />;
     }
   };
 
   return (
+    
     <View style={{ flex: 1 }}>
       {renderScreen()}
     </View>
