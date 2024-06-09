@@ -1,6 +1,6 @@
 // App.js
 import React, { useState, useEffect, useRef  } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform ,  BackHandler  } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform ,  BackHandler , ToastAndroid  } from 'react-native';
 import {Calendar, LocaleConfig} from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BleManager } from 'react-native-ble-plx'; // 블루투스 모듈 import
@@ -462,6 +462,7 @@ const MedicalScreen = ({ navigateTo }) => {
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('Home');
+  const [previousScreen, setPreviousScreen] = useState(null);
 
   useEffect(() => {
     const checkUserName = async () => {
@@ -473,46 +474,62 @@ const App = () => {
       }
     };
     checkUserName();
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+
+    return () => backHandler.remove();
   }, []);
+
+  const handleBackPress = () => {
+    if (currentScreen === 'Home') {
+      // 홈 화면에서 뒤로가기 버튼을 누른 경우에는 토스트 메시지를 띄우고 앱 종료를 막습니다.
+      ToastAndroid.show('한 번 더 누르면 종료됩니다.', ToastAndroid.SHORT);
+      BackHandler.addEventListener('hardwareBackPress', handleBackPressAgain);
+    } else if (previousScreen) {
+      // 홈 화면이 아닌 경우에는 이전 화면으로 이동합니다.
+      setCurrentScreen(previousScreen);
+      setPreviousScreen(null);
+    }
+    return true;
+  };
+  
+  const handleBackPressAgain = () => {
+    // 한 번 더 뒤로가기 버튼을 누를 때에만 앱을 종료합니다.
+    BackHandler.exitApp();
+    return true;
+  };
+
+  const navigateTo = (screen) => {
+    if (currentScreen !== 'Home') {
+      setPreviousScreen(currentScreen); // 현재 화면 정보를 이전 화면으로 설정합니다.
+    }
+    setCurrentScreen(screen);
+  };
+
 
   const renderScreen = () => {
     switch (currentScreen) {
-
-      // 홈 화면 상단
       case 'Calendar':
-        return <CalendarScreen navigateTo={setCurrentScreen} />;
-
+        return <CalendarScreen navigateTo={navigateTo} />;
       case 'Settings':
-        return <SettingsScreen navigateTo={setCurrentScreen} />;
-
-        // 사용자 정보
+        return <SettingsScreen navigateTo={navigateTo} />;
       case 'Private':
-          return <PrivateScreen navigateTo={setCurrentScreen} />;
-
-    
+        return <PrivateScreen navigateTo={navigateTo} />;
       case 'Parentaccount':
-          return <ParentaccountScreen navigateTo={setCurrentScreen} />;
-
+        return <ParentaccountScreen navigateTo={navigateTo} />;
       case 'Medical':
-          return <MedicalScreen navigateTo={setCurrentScreen} />;
-
-
+        return <MedicalScreen navigateTo={navigateTo} />;
       case 'NameInput':
-          return <NameInputScreen navigateTo={setCurrentScreen} />;
-
-
-          // 메인 화면
+        return <NameInputScreen navigateTo={navigateTo} />;
       case 'UserInfo':
-        return <UserInfo navigateTo={setCurrentScreen} />;
-      
-        case 'Home':
+        return <UserInfo navigateTo={navigateTo} />;
+      case 'Home':
       default:
-        return <HomeScreen navigateTo={setCurrentScreen} />;
+        return <HomeScreen navigateTo={navigateTo} />;
     }
   };
 
   return (
-    
     <View style={{ flex: 1 }}>
       {renderScreen()}
     </View>
