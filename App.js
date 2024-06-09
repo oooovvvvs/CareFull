@@ -113,6 +113,7 @@ const SettingsScreen = ({ navigateTo }) => (
   </View>
 );
 
+// 개인정보 관리
 const PrivateScreen = ({ navigateTo }) => {
   const [name, setName] = useState('');
 
@@ -237,24 +238,6 @@ const UsercodeScreen = ({ navigateTo }) => {
         if (savedCode) {
           console.log('저장된 사용자 코드:', savedCode);
           setUserCode(savedCode); // 저장된 코드를 사용하여 화면에 표시
-        } else {
-          const code = generateUserCode(); // 새로운 사용자 코드 생성
-          console.log('새로 생성된 사용자 코드:', code);
-          setUserCode(code); // 화면에 표시
-          AsyncStorage.setItem('userCode', code)
-            .then(() => {
-              console.log('사용자 코드가 AsyncStorage에 저장되었습니다.');
-              database().ref('userCodes').push(code)
-                .then(() => {
-                  console.log('사용자 코드가 Firebase에 저장되었습니다.');
-                })
-                .catch(error => {
-                  console.log('사용자 코드를 Firebase에 저장하는 중 오류 발생:', error);
-                });
-            })
-            .catch(error => {
-              console.log('사용자 코드를 AsyncStorage에 저장하는 중 오류 발생:', error);
-            });
         }
       })
       .catch(error => {
