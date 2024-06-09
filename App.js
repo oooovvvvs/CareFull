@@ -113,22 +113,73 @@ const SettingsScreen = ({ navigateTo }) => (
   </View>
 );
 
-const PrivateScreen = ({ navigateTo }) => (
-  <View style={styles.header}>
-    <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
-      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 개인 정보 관리</Text>
-    </TouchableOpacity>
-  </View>
-);
+const PrivateScreen = ({ navigateTo }) => {
+  const [name, setName] = useState('');
+
+  useEffect(() => {
+    const loadName = async () => {
+      const userName = await AsyncStorage.getItem('userName');
+      if (userName) {
+        setName(userName);
+      }
+    };
+    loadName();
+  }, []);
+
+  return (
+    <View style={styles.header}>
+      <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
+        <Text style={{ fontSize: 30, fontWeight: 'bold', color: 'black' }}>← 개인 정보 관리</Text>
+      </TouchableOpacity>
+      
+      <View style={styles.nickname}>
+      <Text style={{ fontSize: 25, fontWeight: 'bold', color: 'black', marginBottom: 15 }}>닉네임: {name}</Text>
+
+      </View>
+    </View>
+  );
+};
 
 const PasswordScreen = ({ navigateTo }) => (
   <View style={styles.header}>
     <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
       <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 비밀번호 변경</Text>
     </TouchableOpacity>
+    
   </View>
 );
 
+
+//닉네임 입력
+const NameInputScreen = ({ navigateTo }) => {
+  const [name, setName] = useState('');
+
+  const handleSaveName = async () => {
+    if (name.trim() !== '') {
+      const userCode = generateUserCode();
+      await AsyncStorage.setItem('userName', name);
+      await AsyncStorage.setItem('userCode', userCode);
+
+      // Firebase Realtime Database에 닉네임과 고유 번호 저장
+      await database().ref('users').push({ name, userCode });
+
+      navigateTo('Home');
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>닉네임을 입력하세요</Text>
+      <TextInput
+        style={styles.nicknamebox}
+        placeholder="닉네임"
+        value={name}
+        onChangeText={setName}
+      />
+      <Button title="저장" onPress={handleSaveName} />
+    </View>
+  );
+};
 
 //사용자 정보
 const UserInfo = ({ navigateTo }) => (
@@ -406,6 +457,18 @@ const MedicalScreen = ({ navigateTo }) => {
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('Home');
 
+  useEffect(() => {
+    const checkUserName = async () => {
+      const userName = await AsyncStorage.getItem('userName');
+      if (userName) {
+        setCurrentScreen('Home');
+      } else {
+        setCurrentScreen('NameInput');
+      }
+    };
+    checkUserName();
+  }, []);
+
   const renderScreen = () => {
     switch (currentScreen) {
 
@@ -433,6 +496,8 @@ const App = () => {
           return <MedicalScreen navigateTo={setCurrentScreen} />;
 
 
+      case 'NameInput':
+          return <NameInputScreen navigateTo={setCurrentScreen} />;
 
 
           // 메인 화면
@@ -446,6 +511,7 @@ const App = () => {
   };
 
   return (
+    
     <View style={{ flex: 1 }}>
       {renderScreen()}
     </View>
@@ -478,6 +544,14 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#fff',
   },
+
+  nicknamebox: {
+    
+    padding: 10,
+    textAlign: 'center',
+    width: '80%',
+  },
+
 
   // 보호자 코드
   input: {
