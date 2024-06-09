@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BleManager } from 'react-native-ble-plx'; // 블루투스 모듈 import
 import { request, PERMISSIONS } from 'react-native-permissions';
 import firebase from '@react-native-firebase/app';
-import '@react-native-firebase/database';
+import database from '@react-native-firebase/database';
 
 
 //파이어베이스 
@@ -177,23 +177,38 @@ const generateUserCode = () => {
   return code;
 };
 
-// 사용자 코드 화면 컴포넌트
 const UsercodeScreen = ({ navigateTo }) => {
   const [userCode, setUserCode] = useState('');
 
   useEffect(() => {
-    AsyncStorage.getItem('userCode').then((savedCode) => {
-      if (savedCode) {
-        setUserCode(savedCode); // 저장된 코드를 사용하여 화면에 표시
-      } else {
-        const code = generateUserCode(); // 새로운 사용자 코드 생성
-        setUserCode(code); // 화면에 표시
-        AsyncStorage.setItem('userCode', code); // 생성된 코드를 AsyncStorage에 저장
-        firebase.database().ref('/userCodes').push({ userCode: code }); // Firebase에 저장
-
-      }
-    
-    });
+    AsyncStorage.getItem('userCode')
+      .then((savedCode) => {
+        if (savedCode) {
+          console.log('저장된 사용자 코드:', savedCode);
+          setUserCode(savedCode); // 저장된 코드를 사용하여 화면에 표시
+        } else {
+          const code = generateUserCode(); // 새로운 사용자 코드 생성
+          console.log('새로 생성된 사용자 코드:', code);
+          setUserCode(code); // 화면에 표시
+          AsyncStorage.setItem('userCode', code)
+            .then(() => {
+              console.log('사용자 코드가 AsyncStorage에 저장되었습니다.');
+              database().ref('userCodes').push(code)
+                .then(() => {
+                  console.log('사용자 코드가 Firebase에 저장되었습니다.');
+                })
+                .catch(error => {
+                  console.log('사용자 코드를 Firebase에 저장하는 중 오류 발생:', error);
+                });
+            })
+            .catch(error => {
+              console.log('사용자 코드를 AsyncStorage에 저장하는 중 오류 발생:', error);
+            });
+        }
+      })
+      .catch(error => {
+        console.log('AsyncStorage에서 사용자 코드를 가져오는 중 오류 발생:', error);
+      });
   }, []);
 
   // 사용자 코드를 4개의 부분으로 나누는 함수
