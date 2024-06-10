@@ -1,12 +1,16 @@
 // App.js
 import React, { useState, useEffect, useRef  } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform  } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform ,  BackHandler , ToastAndroid  } from 'react-native';
 import {Calendar, LocaleConfig} from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BleManager } from 'react-native-ble-plx'; // 블루투스 모듈 import
 import { request, PERMISSIONS } from 'react-native-permissions';
 import firebase from '@react-native-firebase/app';
 import database from '@react-native-firebase/database';
+
+//스택용 임포트
+
+
 
 
 //파이어베이스 
@@ -281,13 +285,14 @@ const generateUserCode = () => {
   return code;
 };
 
-//보호자 등록
 const ParentaccountScreen = ({ navigateTo }) => {
   const inputRefs = [useRef(), useRef(), useRef(), useRef()];
+  const [parentCodes, setParentCodes] = React.useState(['', '', '', '']);
 
   const handleCodeChange = (text, index) => {
+    // 공백 제거하여 하나의 문자열로 만듭니다
     const newParentCodes = [...parentCodes];
-    newParentCodes[index] = text;
+    newParentCodes[index] = text.replace(/\s/g, ''); // 정규식을 사용하여 공백 제거
     setParentCodes(newParentCodes);
 
     if (text.length === 4 && index < 3) {
@@ -295,34 +300,34 @@ const ParentaccountScreen = ({ navigateTo }) => {
     }
   };
 
-  const [parentCodes, setParentCodes] = React.useState(['', '', '', '']);
-
- // 상대방의 고유 코드를 검색하여 사용자를 찾고 알림을 전송하는 함수
-const sendNotificationToParent = async (parentCode) => {
-  try {
-    // Firebase Realtime Database에서 상대방의 고유 코드로 사용자를 검색합니다.
-    const snapshot = await database().ref('userCodes').orderByChild('parentCode').equalTo(parentCode).once('value');
-    const user = snapshot.val();
-
-    if (user) {
-      // 사용자를 찾았으면 알림을 전송합니다.
-      // 여기에서 FCM 또는 다른 푸시 알림 서비스를 사용하여 알림을 전송합니다.
-      // sendNotificationToUser(user);
-      Alert.alert(`보호자 등록 요청을 보냈습니다.`);
-    } else {
-      Alert.alert('유효하지 않은 보호자 코드입니다.');
+  
+  const searchUserByParentCode = async (parentCode) => {
+    try {
+      const snapshot = await database().ref('users').orderByChild('userCode').equalTo(parentCode).once('value');
+      const user = snapshot.val();
+      return user;
+    } catch (error) {
+      console.error('사용자를 검색하는 중 오류 발생:', error);
+      throw error;
     }
-  } catch (error) {
-    console.error('알림을 전송하는 중 오류 발생:', error);
-    Alert.alert('알림을 전송하는 중 오류가 발생했습니다. 나중에 다시 시도해주세요.');
-  }
-};
+  };
 
-// 보호자 등록 요청 보내기 버튼 클릭 시 호출되는 함수
-const sendRegistrationRequestToParent = () => {
-  const parentCode = parentCodes.join('');
-  sendNotificationToParent(parentCode);
-};
+  const sendRegistrationRequestToParent = async () => {
+    try {
+      const parentCode = parentCodes.join('');
+      const user = await searchUserByParentCode(parentCode);
+      
+      if (user) {
+        Alert.alert('보호자로 등록하시겠습니까?');
+        // 여기에 사용자를 찾았을 때의 처리를 추가하세요.
+      } else {
+        Alert.alert('유효하지 않은 사용자 코드입니다.');
+      }
+    } catch (error) {
+      console.error('보호자 등록 요청 중 오류 발생:', error);
+      Alert.alert('보호자 등록 요청 중 오류가 발생했습니다. 나중에 다시 시도해주세요.');
+    }
+  };
 
   return (
     <>
@@ -460,6 +465,8 @@ const MedicalScreen = ({ navigateTo }) => {
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('Home');
+  const [screenStack, setScreenStack] = useState(['Home']);
+  const [lastBackPress, setLastBackPress] = useState(0);
 
   useEffect(() => {
     const checkUserName = async () => {
@@ -473,42 +480,59 @@ const App = () => {
     checkUserName();
   }, []);
 
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+
+    return () => backHandler.remove();
+  }, [currentScreen, screenStack]);
+
+  const handleBackPress = () => {
+    if (currentScreen === 'Home') {
+      const currentTime = Date.now();
+      if (currentTime - lastBackPress < 2000) {
+        BackHandler.exitApp();
+      } else {
+        ToastAndroid.show('한 번 더 누르면 종료됩니다.', ToastAndroid.SHORT);
+        setLastBackPress(currentTime);
+      }
+      return true;
+    }
+
+    if (screenStack.length > 1) {
+      const newStack = [...screenStack];
+      newStack.pop();
+      setCurrentScreen(newStack[newStack.length - 1]);
+      setScreenStack(newStack);
+      return true;
+    }
+
+    return false; // 기본 동작을 수행 (앱 종료)
+  };
+
+  const navigateTo = (screen) => {
+    setCurrentScreen(screen);
+    setScreenStack([...screenStack, screen]);
+  };
+
   const renderScreen = () => {
     switch (currentScreen) {
-
-      // 홈 화면 상당
       case 'Calendar':
-        return <CalendarScreen navigateTo={setCurrentScreen} />;
-
+        return <CalendarScreen navigateTo={navigateTo} />;
       case 'Settings':
-        return <SettingsScreen navigateTo={setCurrentScreen} />;
-
-        // 사용자 정보
+        return <SettingsScreen navigateTo={navigateTo} />;
       case 'Private':
-          return <PrivateScreen navigateTo={setCurrentScreen} />;
-
-      case 'Password':
-            return <PasswordScreen navigateTo={setCurrentScreen} />;
-
-
+        return <PrivateScreen navigateTo={navigateTo} />;
       case 'Parentaccount':
-          return <ParentaccountScreen navigateTo={setCurrentScreen} />;
-
+        return <ParentaccountScreen navigateTo={navigateTo} />;
       case 'Medical':
-          return <MedicalScreen navigateTo={setCurrentScreen} />;
-
-
+        return <MedicalScreen navigateTo={navigateTo} />;
       case 'NameInput':
-          return <NameInputScreen navigateTo={setCurrentScreen} />;
-
-
-          // 메인 화면
+        return <NameInputScreen navigateTo={navigateTo} />;
       case 'UserInfo':
-        return <UserInfo navigateTo={setCurrentScreen} />;
-      
-        case 'Home':
+        return <UserInfo navigateTo={navigateTo} />;
+      case 'Home':
       default:
-        return <HomeScreen navigateTo={setCurrentScreen} />;
+        return <HomeScreen navigateTo={navigateTo} />;
     }
   };
 
