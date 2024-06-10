@@ -30,7 +30,7 @@ if (!firebase.apps.length) {
 }
 
 const HomeScreen = ({ navigateTo }) => (
-  <><ScrollView style={styles.container}>
+  <ScrollView style={styles.container}>
     <View style={styles.header}>
       <Text style={styles.title}>carefull</Text>
       <View style={styles.headerIcons}>
@@ -42,13 +42,13 @@ const HomeScreen = ({ navigateTo }) => (
         </TouchableOpacity>
       </View>
     </View>
-    <View style={{ marginBottom: 10 }}>
+    <View style={{marginBottom:10}}>
       <ImageBackground source={require('./assets/pill_drop.jpg')} styles={styles.backgroundImage}>
-        <Text style={{ fontSize: 30, fontWeight: 'bold', padding: "1%" }}>금일 복용 횟수</Text>
-        <Text style={styles.daystext}>아침</Text>
-        <Text style={styles.daystext}>점심</Text>
-        <Text style={styles.daystext}>저녁</Text>
-      </ImageBackground>
+    <Text style={{fontSize:30, fontWeight:'bold', padding:"1%"}}>금일 복용 횟수</Text>
+    <Text style={styles.daystext}>아침</Text>
+    <Text style={styles.daystext}>점심</Text>
+    <Text style={styles.daystext}>저녁</Text>
+    </ImageBackground>
     </View>
     <View style={styles.medicationReminder}>
       <Text style={styles.sectionTitle}>복용 알림</Text>
@@ -60,7 +60,7 @@ const HomeScreen = ({ navigateTo }) => (
         </View>
       </View>
     </View>
-    <View style={styles.medicationReminder}>
+      <View style={styles.medicationReminder}>
       <Text style={styles.sectionTitle}>약 잔여량</Text>
       <View style={styles.reminderItem}>
         <Image style={styles.reminderIcon} source={require('./assets/pill_00.png')} />
@@ -90,8 +90,7 @@ const HomeScreen = ({ navigateTo }) => (
         </View>
       </TouchableOpacity>
     </ScrollView>
-  </ScrollView>
-  <View style={styles.bottomNavigation}>
+    <View style={styles.bottomNavigation}>
       <TouchableOpacity onPress={() => navigateTo('Home')}>
         <Image style={styles.bottomIcon} source={require('./assets/pill_00.png')} />
       </TouchableOpacity>
@@ -101,7 +100,8 @@ const HomeScreen = ({ navigateTo }) => (
       <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
         <Image style={styles.bottomIcon} source={require('./assets/Account.png')} />
       </TouchableOpacity>
-    </View></>
+    </View>
+  </ScrollView>
 );
 
 const CalendarScreen = ({ navigateTo }) => {
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 20,
   },
-  
+ 
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -662,18 +662,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   bottomNavigation: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    height: 60,
     padding: 20,
     backgroundColor: '#a5d6a7',
-    borderTopWidth: 1,
-    borderTopColor: '#ddd',
   },
   bottomIcon: {
     width: 24,
