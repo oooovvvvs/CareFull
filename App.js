@@ -8,13 +8,6 @@ import { request, PERMISSIONS } from 'react-native-permissions';
 import firebase from '@react-native-firebase/app';
 import database from '@react-native-firebase/database';
 import 'react-native-gesture-handler';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
-
-//스택용 임포트
-
-
-
 
 //파이어베이스 
 if (!firebase.apps.length) {
@@ -40,7 +33,7 @@ const HomeScreen = ({ navigateTo }) => (
         <TouchableOpacity onPress={() => navigateTo('Settings')}>
           <Image style={styles.icon} source={require('./assets/Alarm.png')} />
         </TouchableOpacity>
-      </View>
+      </View>*
     </View>
     <View style={{marginBottom:10}}>
       <ImageBackground source={require('./assets/pill_drop.jpg')} styles={styles.backgroundImage}>
