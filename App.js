@@ -91,7 +91,7 @@ const HomeScreen = ({ navigateTo }) => (
       </TouchableOpacity>
     </ScrollView>
   </ScrollView>
-  <View style={styles.bottomNavigation}>
+  <View style={styles.bottomNavigation}> 
       <TouchableOpacity onPress={() => navigateTo('Home')}>
         <Image style={styles.bottomIcon} source={require('./assets/pill_00.png')} />
       </TouchableOpacity>
@@ -104,7 +104,7 @@ const HomeScreen = ({ navigateTo }) => (
     </View></>
 );
 
-const CalendarScreen = ({ navigateTo }) => {
+const CalendarScreen = ({ navigateTo }) => { //캘린더
   LocaleConfig.locales['kr'] = {
     monthNames: [
       '1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'
@@ -575,7 +575,8 @@ const styles = StyleSheet.create({
     width: '80%',
   },
 
-  Calendar: {
+  Calendar: { //캘린더
+    marginTop: 20,
     flex: 1,
     backgroundColor: '#fff',
     dayTextAtIndex0: { color: 'red'},
@@ -661,7 +662,7 @@ const styles = StyleSheet.create({
   medicationDescription: {
     textAlign: 'center',
   },
-  bottomNavigation: {
+  bottomNavigation: { //화면 하단 네이게이션바
     position: 'absolute',
     bottom: 0,
     left: 0,
