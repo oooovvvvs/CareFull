@@ -462,7 +462,8 @@ const MedicalScreen = ({ navigateTo }) => {
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('Home');
-  const [previousScreen, setPreviousScreen] = useState(null);
+  const [screenStack, setScreenStack] = useState(['Home']);
+  const [lastBackPress, setLastBackPress] = useState(0);
 
   useEffect(() => {
     const checkUserName = async () => {
@@ -474,38 +475,41 @@ const App = () => {
       }
     };
     checkUserName();
+  }, []);
 
+  useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
 
     return () => backHandler.remove();
-  }, []);
+  }, [currentScreen, screenStack]);
 
   const handleBackPress = () => {
     if (currentScreen === 'Home') {
-      // 홈 화면에서 뒤로가기 버튼을 누른 경우에는 토스트 메시지를 띄우고 앱 종료를 막습니다.
-      ToastAndroid.show('한 번 더 누르면 종료됩니다.', ToastAndroid.SHORT);
-      BackHandler.addEventListener('hardwareBackPress', handleBackPressAgain);
-    } else if (previousScreen) {
-      // 홈 화면이 아닌 경우에는 이전 화면으로 이동합니다.
-      setCurrentScreen(previousScreen);
-      setPreviousScreen(null);
+      const currentTime = Date.now();
+      if (currentTime - lastBackPress < 2000) {
+        BackHandler.exitApp();
+      } else {
+        ToastAndroid.show('한 번 더 누르면 종료됩니다.', ToastAndroid.SHORT);
+        setLastBackPress(currentTime);
+      }
+      return true;
     }
-    return true;
-  };
-  
-  const handleBackPressAgain = () => {
-    // 한 번 더 뒤로가기 버튼을 누를 때에만 앱을 종료합니다.
-    BackHandler.exitApp();
-    return true;
+
+    if (screenStack.length > 1) {
+      const newStack = [...screenStack];
+      newStack.pop();
+      setCurrentScreen(newStack[newStack.length - 1]);
+      setScreenStack(newStack);
+      return true;
+    }
+
+    return false; // 기본 동작을 수행 (앱 종료)
   };
 
   const navigateTo = (screen) => {
-    if (currentScreen !== 'Home') {
-      setPreviousScreen(currentScreen); // 현재 화면 정보를 이전 화면으로 설정합니다.
-    }
     setCurrentScreen(screen);
+    setScreenStack([...screenStack, screen]);
   };
-
 
   const renderScreen = () => {
     switch (currentScreen) {
