@@ -283,13 +283,14 @@ const generateUserCode = () => {
   return code;
 };
 
-//보호자 등록
 const ParentaccountScreen = ({ navigateTo }) => {
   const inputRefs = [useRef(), useRef(), useRef(), useRef()];
+  const [parentCodes, setParentCodes] = React.useState(['', '', '', '']);
 
   const handleCodeChange = (text, index) => {
+    // 공백 제거하여 하나의 문자열로 만듭니다
     const newParentCodes = [...parentCodes];
-    newParentCodes[index] = text;
+    newParentCodes[index] = text.replace(/\s/g, ''); // 정규식을 사용하여 공백 제거
     setParentCodes(newParentCodes);
 
     if (text.length === 4 && index < 3) {
@@ -297,34 +298,34 @@ const ParentaccountScreen = ({ navigateTo }) => {
     }
   };
 
-  const [parentCodes, setParentCodes] = React.useState(['', '', '', '']);
-
- // 상대방의 고유 코드를 검색하여 사용자를 찾고 알림을 전송하는 함수
-const sendNotificationToParent = async (parentCode) => {
-  try {
-    // Firebase Realtime Database에서 상대방의 고유 코드로 사용자를 검색합니다.
-    const snapshot = await database().ref('userCodes').orderByChild('parentCode').equalTo(parentCode).once('value');
-    const user = snapshot.val();
-
-    if (user) {
-      // 사용자를 찾았으면 알림을 전송합니다.
-      // 여기에서 FCM 또는 다른 푸시 알림 서비스를 사용하여 알림을 전송합니다.
-      // sendNotificationToUser(user);
-      Alert.alert(`보호자 등록 요청을 보냈습니다.`);
-    } else {
-      Alert.alert('유효하지 않은 보호자 코드입니다.');
+  
+  const searchUserByParentCode = async (parentCode) => {
+    try {
+      const snapshot = await database().ref('users').orderByChild('userCode').equalTo(parentCode).once('value');
+      const user = snapshot.val();
+      return user;
+    } catch (error) {
+      console.error('사용자를 검색하는 중 오류 발생:', error);
+      throw error;
     }
-  } catch (error) {
-    console.error('알림을 전송하는 중 오류 발생:', error);
-    Alert.alert('알림을 전송하는 중 오류가 발생했습니다. 나중에 다시 시도해주세요.');
-  }
-};
+  };
 
-// 보호자 등록 요청 보내기 버튼 클릭 시 호출되는 함수
-const sendRegistrationRequestToParent = () => {
-  const parentCode = parentCodes.join('');
-  sendNotificationToParent(parentCode);
-};
+  const sendRegistrationRequestToParent = async () => {
+    try {
+      const parentCode = parentCodes.join('');
+      const user = await searchUserByParentCode(parentCode);
+      
+      if (user) {
+        Alert.alert('보호자로 등록하시겠습니까?');
+        // 여기에 사용자를 찾았을 때의 처리를 추가하세요.
+      } else {
+        Alert.alert('유효하지 않은 사용자 코드입니다.');
+      }
+    } catch (error) {
+      console.error('보호자 등록 요청 중 오류 발생:', error);
+      Alert.alert('보호자 등록 요청 중 오류가 발생했습니다. 나중에 다시 시도해주세요.');
+    }
+  };
 
   return (
     <>
