@@ -29,7 +29,7 @@ if (!firebase.apps.length) {
   });
 }
 
-const HomeScreen = ({ navigateTo }) => (
+const HomeScreen = ({ navigateTo }) => ( //상단 네비게이션 바
   <><ScrollView style={styles.container}>
     <View style={styles.header}>
       <Text style={styles.title}>carefull</Text>
@@ -42,7 +42,8 @@ const HomeScreen = ({ navigateTo }) => (
         </TouchableOpacity>
       </View>
     </View>
-    <View style={{ marginBottom: 10 }}>
+
+    <View style={{ marginBottom: 10, marginTop: 10 }}>
       <ImageBackground source={require('./assets/pill_drop.jpg')} styles={styles.backgroundImage}>
         <Text style={{ fontSize: 30, fontWeight: 'bold', padding: "1%" }}>금일 복용 횟수</Text>
         <Text style={styles.daystext}>아침</Text>
@@ -50,6 +51,7 @@ const HomeScreen = ({ navigateTo }) => (
         <Text style={styles.daystext}>저녁</Text>
       </ImageBackground>
     </View>
+
     <View style={styles.medicationReminder}>
       <Text style={styles.sectionTitle}>복용 알림</Text>
       <View style={styles.reminderItem}>
@@ -60,6 +62,7 @@ const HomeScreen = ({ navigateTo }) => (
         </View>
       </View>
     </View>
+
     <View style={styles.medicationReminder}>
       <Text style={styles.sectionTitle}>약 잔여량</Text>
       <View style={styles.reminderItem}>
@@ -91,6 +94,7 @@ const HomeScreen = ({ navigateTo }) => (
       </TouchableOpacity>
     </ScrollView>
   </ScrollView>
+  
   <View style={styles.bottomNavigation}> 
       <TouchableOpacity onPress={() => navigateTo('Home')}>
         <Image style={styles.bottomIcon} source={require('./assets/pill_00.png')} />
@@ -566,6 +570,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10,
     backgroundColor: '#fff',
+    
   },
   
   nicknamebox: {
@@ -606,6 +611,8 @@ const styles = StyleSheet.create({
   headerIcons: {
     justifyContent: 'flex-end',
     flexDirection: 'row',
+    position: 'absolute',
+    right: 0,
   },
   icon: {
     width: 24,
@@ -662,7 +669,7 @@ const styles = StyleSheet.create({
   medicationDescription: {
     textAlign: 'center',
   },
-  bottomNavigation: { //화면 하단 네이게이션바
+  bottomNavigation: { // 하단 네이게이션바
     position: 'absolute',
     bottom: 0,
     left: 0,
