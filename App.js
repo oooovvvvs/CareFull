@@ -7,6 +7,9 @@ import { BleManager } from 'react-native-ble-plx'; // 블루투스 모듈 import
 import { request, PERMISSIONS } from 'react-native-permissions';
 import firebase from '@react-native-firebase/app';
 import database from '@react-native-firebase/database';
+import 'react-native-gesture-handler';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
 
 //스택용 임포트
 
@@ -27,7 +30,7 @@ if (!firebase.apps.length) {
 }
 
 const HomeScreen = ({ navigateTo }) => (
-  <ScrollView style={styles.container}>
+  <><ScrollView style={styles.container}>
     <View style={styles.header}>
       <Text style={styles.title}>carefull</Text>
       <View style={styles.headerIcons}>
@@ -39,16 +42,16 @@ const HomeScreen = ({ navigateTo }) => (
         </TouchableOpacity>
       </View>
     </View>
-    <View style={{marginBottom:10}}>
+    <View style={{ marginBottom: 10 }}>
       <ImageBackground source={require('./assets/pill_drop.jpg')} styles={styles.backgroundImage}>
-    <Text style={{fontSize:30, fontWeight:'bold', padding:"1%"}}>금일 투약 횟수</Text>
-    <Text style={styles.daystext}>아침</Text>
-    <Text style={styles.daystext}>점심</Text>
-    <Text style={styles.daystext}>저녁</Text>
-    </ImageBackground>
+        <Text style={{ fontSize: 30, fontWeight: 'bold', padding: "1%" }}>금일 복용 횟수</Text>
+        <Text style={styles.daystext}>아침</Text>
+        <Text style={styles.daystext}>점심</Text>
+        <Text style={styles.daystext}>저녁</Text>
+      </ImageBackground>
     </View>
     <View style={styles.medicationReminder}>
-      <Text style={styles.sectionTitle}>투약 알림</Text>
+      <Text style={styles.sectionTitle}>복용 알림</Text>
       <View style={styles.reminderItem}>
         <Image style={styles.reminderIcon} source={require('./assets/pill_00.png')} />
         <View>
@@ -57,7 +60,7 @@ const HomeScreen = ({ navigateTo }) => (
         </View>
       </View>
     </View>
-      <View style={styles.medicationReminder}>
+    <View style={styles.medicationReminder}>
       <Text style={styles.sectionTitle}>약 잔여량</Text>
       <View style={styles.reminderItem}>
         <Image style={styles.reminderIcon} source={require('./assets/pill_00.png')} />
@@ -87,7 +90,8 @@ const HomeScreen = ({ navigateTo }) => (
         </View>
       </TouchableOpacity>
     </ScrollView>
-    <View style={styles.bottomNavigation}>
+  </ScrollView>
+  <View style={styles.bottomNavigation}>
       <TouchableOpacity onPress={() => navigateTo('Home')}>
         <Image style={styles.bottomIcon} source={require('./assets/pill_00.png')} />
       </TouchableOpacity>
@@ -97,8 +101,7 @@ const HomeScreen = ({ navigateTo }) => (
       <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
         <Image style={styles.bottomIcon} source={require('./assets/Account.png')} />
       </TouchableOpacity>
-    </View>
-  </ScrollView>
+    </View></>
 );
 
 const CalendarScreen = ({ navigateTo }) => {
@@ -210,7 +213,6 @@ const PrivateScreen = ({ navigateTo }) => {
   );
 };
 
-
 //닉네임 입력
 const NameInputScreen = ({ navigateTo }) => {
   const [name, setName] = useState('');
@@ -255,10 +257,6 @@ const UserInfo = ({ navigateTo }) => (
       
       <TouchableOpacity onPress={() => navigateTo('Private')}>
       <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>개인 정보 관리</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigateTo('Password')}>
-      <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>비밀번호 변경</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigateTo('Parentaccount')}>
@@ -537,7 +535,6 @@ const App = () => {
   };
 
   return (
-    
     <View style={{ flex: 1 }}>
       {renderScreen()}
     </View>
@@ -562,7 +559,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 20,
   },
- 
+  
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -665,11 +662,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   bottomNavigation: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
+    height: 60,
     padding: 20,
     backgroundColor: '#a5d6a7',
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
   },
   bottomIcon: {
     width: 24,
