@@ -7,6 +7,7 @@ import { BleManager } from 'react-native-ble-plx'; // 블루투스 모듈 import
 import { request, PERMISSIONS } from 'react-native-permissions';
 import firebase from '@react-native-firebase/app';
 import database from '@react-native-firebase/database';
+import messaging from '@react-native-firebase/messaging';
 import 'react-native-gesture-handler';
 
 
@@ -133,6 +134,7 @@ const CalendarScreen = ({ navigateTo }) => { //캘린더
   );
 };
 
+// 알림 화면
 const SettingsScreen = ({ navigateTo }) => (
   <View style={styles.header}>
     <TouchableOpacity onPress={() => navigateTo('Home')}>
@@ -283,12 +285,21 @@ const generateUserCode = () => {
 
 const ParentaccountScreen = ({ navigateTo }) => {
   const inputRefs = [useRef(), useRef(), useRef(), useRef()];
-  const [parentCodes, setParentCodes] = React.useState(['', '', '', '']);
+  const [parentCodes, setParentCodes] = useState(['', '', '', '']);
+  const [userName, setUserName] = useState(''); // 사용자 이름 상태 추가
+
+  useEffect(() => {
+    // AsyncStorage에서 사용자 이름 가져오기
+    const fetchUserName = async () => {
+      const storedUserName = await AsyncStorage.getItem('userName');
+      setUserName(storedUserName || ''); // AsyncStorage에 저장된 사용자 이름이 없으면 빈 문자열로 설정
+    };
+    fetchUserName();
+  }, []);
 
   const handleCodeChange = (text, index) => {
-    // 공백 제거하여 하나의 문자열로 만듭니다
     const newParentCodes = [...parentCodes];
-    newParentCodes[index] = text.replace(/\s/g, ''); // 정규식을 사용하여 공백 제거
+    newParentCodes[index] = text.replace(/\s/g, ''); // 공백 제거
     setParentCodes(newParentCodes);
 
     if (text.length === 4 && index < 3) {
@@ -296,7 +307,6 @@ const ParentaccountScreen = ({ navigateTo }) => {
     }
   };
 
-  
   const searchUserByParentCode = async (parentCode) => {
     try {
       const snapshot = await database().ref('users').orderByChild('userCode').equalTo(parentCode).once('value');
@@ -308,14 +318,53 @@ const ParentaccountScreen = ({ navigateTo }) => {
     }
   };
 
+  const sendNotificationToParent = async (parentToken, userName) => {
+    try {
+      const message = {
+        notification: {
+          title: '보호자 등록 요청',
+          body: `n`,
+        },
+        token: parentToken,
+      };
+
+      await fetch('https://fcm.googleapis.com/fcm/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `key=AIzaSyDb7voCfYlMEUFfVEu7mqxBNS8VV5xy-q0`, // Firebase 콘솔에서 확인한 서버 키를 사용합니다.
+        },
+        body: JSON.stringify(message),
+      });
+    } catch (error) {
+      console.error('알림 전송 중 오류 발생:', error);
+    }
+  };
+
   const sendRegistrationRequestToParent = async () => {
     try {
       const parentCode = parentCodes.join('');
       const user = await searchUserByParentCode(parentCode);
-      
+
       if (user) {
-        Alert.alert('보호자로 등록하시겠습니까?');
-        // 여기에 사용자를 찾았을 때의 처리를 추가하세요.
+        Alert.alert(
+          '보호자로 등록하시겠습니까?',
+          '',
+          [
+            {
+              text: '취소',
+              style: 'cancel',
+            },
+            {
+              text: '확인',
+              onPress: async () => {
+                const parentToken = user[parentCode].fcmToken;
+                await sendNotificationToParent(parentToken, userName); // 변경된 부분: 사용자 이름 전달
+                Alert.alert('보호자에게 요청이 전송되었습니다.');
+              },
+            },
+          ]
+        );
       } else {
         Alert.alert('유효하지 않은 사용자 코드입니다.');
       }
