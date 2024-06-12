@@ -443,17 +443,16 @@ const ParentaccountScreen = ({ navigateTo }) => {
       const parentCode = parentCodes.join('');
       const user = await searchUserByParentCode(parentCode);
       console.log('검색된 사용자:', user); // 사용자 데이터 로그 출력
-    
+  
       if (user) {
         const userKeys = Object.keys(user);
         if (userKeys.length > 0) {
           const userKey = userKeys[0];
           const parentData = user[userKey];
           console.log('부모 데이터:', parentData); // 부모 데이터 로그 출력
-          
+  
           if (parentData.fcmToken) {
             const parentToken = parentData.fcmToken;
-            await sendNotificationToParent(parentToken, userName);
             Alert.alert(
               '보호자로 등록하시겠습니까?',
               '',
@@ -465,6 +464,7 @@ const ParentaccountScreen = ({ navigateTo }) => {
                 {
                   text: '확인',
                   onPress: async () => {
+                    await sendNotificationToParent(parentToken, userName);
                     Alert.alert('보호자에게 요청이 전송되었습니다.');
                   },
                 },
