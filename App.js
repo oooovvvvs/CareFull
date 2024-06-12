@@ -277,36 +277,6 @@ const PrivateScreen = ({ navigateTo }) => {
   );
 };
 
-//닉네임 입력
-const NameInputScreen = ({ navigateTo }) => {
-  const [name, setName] = useState('');
-
-  const handleSaveName = async () => {
-    if (name.trim() !== '') {
-      const userCode = generateUserCode();
-      await AsyncStorage.setItem('userName', name);
-      await AsyncStorage.setItem('userCode', userCode);
-
-      // Firebase Realtime Database에 닉네임과 고유 번호 저장
-      await database().ref('users').push({ name, userCode });
-
-      navigateTo('Home');
-    }
-  };
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>닉네임을 입력하세요</Text>
-      <TextInput
-        style={styles.nicknamebox}
-        placeholder="닉네임"
-        value={name}
-        onChangeText={setName}
-      />
-      <Button title="저장" onPress={handleSaveName} />
-    </View>
-  );
-};
 
 //사용자 정보
 const UserInfo = ({ navigateTo }) => (
@@ -346,6 +316,61 @@ const generateUserCode = () => {
   }
   return code;
 };
+
+//닉네임 입력
+const NameInputScreen = ({ navigateTo }) => {
+  const [name, setName] = useState('');
+
+  useEffect(() => {
+    // 사용자가 앱에 로그인하거나 앱을 처음 실행할 때 FCM 토큰을 가져와 저장합니다.
+    const getAndSaveFCMToken = async () => {
+      try {
+        // FCM 토큰 가져오기
+        const fcmToken = await messaging().getToken();
+        if (fcmToken) {
+          // FCM 토큰과 함께 닉네임을 저장
+          await AsyncStorage.setItem('fcmToken', fcmToken);
+        } else {
+          console.log('FCM 토큰을 가져올 수 없습니다.');
+        }
+      } catch (error) {
+        console.error('FCM 토큰을 가져오는 동안 오류가 발생했습니다:', error);
+      }
+    };
+
+    // 앱 실행 시 FCM 토큰 가져오기 및 저장
+    getAndSaveFCMToken();
+  }, []);
+
+  const handleSaveName = async () => {
+    if (name.trim() !== '') {
+      const userCode = generateUserCode();
+      await AsyncStorage.setItem('userName', name);
+      await AsyncStorage.setItem('userCode', userCode);
+      const fcmToken = await AsyncStorage.getItem('fcmToken');
+
+      // Firebase Realtime Database에 닉네임, 고유 번호 및 FCM 토큰 저장
+      await database().ref('users').push({ name, userCode, fcmToken });
+
+      Alert.alert('계정이생성되었습니다.');
+      navigateTo('Home');
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>닉네임을 입력하세요</Text>
+      <TextInput
+        style={styles.nicknamebox}
+        placeholder="닉네임"
+        value={name}
+        onChangeText={setName}
+      />
+      <Button title="저장" onPress={handleSaveName} />
+    </View>
+  );
+};
+
 
 //보호자 등록
 const ParentaccountScreen = ({ navigateTo }) => {
@@ -410,8 +435,10 @@ const ParentaccountScreen = ({ navigateTo }) => {
     try {
       const parentCode = parentCodes.join('');
       const user = await searchUserByParentCode(parentCode);
-
-      if (user) {
+  
+      if (user && user[parentCode] && user[parentCode].fcmToken) {
+        const parentToken = user[parentCode].fcmToken;
+        await sendNotificationToParent(parentToken, userName);
         Alert.alert(
           '보호자로 등록하시겠습니까?',
           '',
@@ -423,13 +450,13 @@ const ParentaccountScreen = ({ navigateTo }) => {
             {
               text: '확인',
               onPress: async () => {
-                const parentToken = user[parentCode].fcmToken;
-                await sendNotificationToParent(parentToken, userName); // 변경된 부분: 사용자 이름 전달
                 Alert.alert('보호자에게 요청이 전송되었습니다.');
               },
             },
           ]
         );
+      } else if (user) {
+        Alert.alert('보호자의 토큰이 없습니다.');
       } else {
         Alert.alert('유효하지 않은 사용자 코드입니다.');
       }
@@ -437,7 +464,7 @@ const ParentaccountScreen = ({ navigateTo }) => {
       console.error('보호자 등록 요청 중 오류 발생:', error);
       Alert.alert('보호자 등록 요청 중 오류가 발생했습니다. 나중에 다시 시도해주세요.');
     }
-  };
+};
 
   return (
     <>
