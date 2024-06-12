@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef  } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform ,  BackHandler , ToastAndroid  } from 'react-native';
 import {Calendar, LocaleConfig} from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import BleManager from 'react-native-ble-manager'; // 블루투스 모듈 import
+import BleManager from 'react-native-ble-plx'; // 블루투스 모듈 import
 import { request, PERMISSIONS } from 'react-native-permissions';
 import firebase from '@react-native-firebase/app';
 import database from '@react-native-firebase/database';
