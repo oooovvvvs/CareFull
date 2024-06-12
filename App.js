@@ -36,9 +36,9 @@ const initializeFCM = async () => {
   }
 };
 
-const HomeScreen = ({ navigateTo }) => ( //상단 네비게이션 바
+const HomeScreen = ({ navigateTo }) => ( 
   <><ScrollView style={styles.container}>
-    <View style={styles.header}>
+    <View style={styles.header}>       
       <Text style={styles.title}>carefull</Text>
       <View style={styles.headerIcons}>
         <TouchableOpacity onPress={() => navigateTo('Calendar')}>
@@ -84,19 +84,19 @@ const HomeScreen = ({ navigateTo }) => ( //상단 네비게이션 바
       <TouchableOpacity onPress={() => navigateTo('Medication1')}>
         <View style={styles.medicationItem}>
           <Image style={styles.medicationImage} source={require('./assets/pill_00.png')} />
-          <Text style={styles.medicationDescription}>아스피린장용정{'\n'}복용한지 지난지 2시간이 지났습니다</Text>
+          {/*<Text style={styles.medicationDescription}>아스피린장용정{'\n'}복용한지 지난지 2시간이 지났습니다</Text>*/}
         </View>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => navigateTo('Medication2')}>
         <View style={styles.medicationItem}>
           <Image style={styles.medicationImage} source={require('./assets/pill_00.png')} />
-          <Text style={styles.medicationDescription}>투통약{'\n'}복용한지 24시간이 지났습니다</Text>
+          {/*<Text style={styles.medicationDescription}>투통약{'\n'}복용한지 24시간이 지났습니다</Text>*/}
         </View>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => navigateTo('Medication3')}>
         <View style={styles.medicationItem}>
           <Image style={styles.medicationImage} source={require('./assets/pill_00.png')} />
-          <Text style={styles.medicationDescription}>비타민A{'\n'}복용한지 1일이 지났습니다</Text>
+          {/*<Text style={styles.medicationDescription}>비타민A{'\n'}복용한지 1일이 지났습니다</Text>*/}
         </View>
       </TouchableOpacity>
     </ScrollView>
@@ -668,6 +668,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    color: '',
     backgroundColor: '#fff',
     padding: 20,
   },
@@ -761,6 +762,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   medicationList: {
+    marginTop: 10,
     paddingVertical: 10,
     paddingHorizontal: 20,
     backgroundColor: '#fff',
@@ -795,14 +797,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
   },
-  header: {
-    // 스타일을 여기에 정의합니다
-  },
-  container: {
-    padding: 20,
-    // 스타일을 여기에 정의합니다
-  },
-
+  
   //사용자 코드 컨테이너
   codeContainer: {
     padding: 10,
