@@ -436,28 +436,40 @@ const ParentaccountScreen = ({ navigateTo }) => {
     try {
       const parentCode = parentCodes.join('');
       const user = await searchUserByParentCode(parentCode);
-  
-      if (user && user[parentCode] && user[parentCode].fcmToken) {
-        const parentToken = user[parentCode].fcmToken;
-        await sendNotificationToParent(parentToken, userName);
-        Alert.alert(
-          '보호자로 등록하시겠습니까?',
-          '',
-          [
-            {
-              text: '취소',
-              style: 'cancel',
-            },
-            {
-              text: '확인',
-              onPress: async () => {
-                Alert.alert('보호자에게 요청이 전송되었습니다.');
-              },
-            },
-          ]
-        );
-      } else if (user) {
-        Alert.alert('보호자의 토큰이 없습니다.');
+      console.log('검색된 사용자:', user); // 사용자 데이터 로그 출력
+    
+      if (user) {
+        const userKeys = Object.keys(user);
+        if (userKeys.length > 0) {
+          const userKey = userKeys[0];
+          const parentData = user[userKey];
+          console.log('부모 데이터:', parentData); // 부모 데이터 로그 출력
+          
+          if (parentData.fcmToken) {
+            const parentToken = parentData.fcmToken;
+            await sendNotificationToParent(parentToken, userName);
+            Alert.alert(
+              '보호자로 등록하시겠습니까?',
+              '',
+              [
+                {
+                  text: '취소',
+                  style: 'cancel',
+                },
+                {
+                  text: '확인',
+                  onPress: async () => {
+                    Alert.alert('보호자에게 요청이 전송되었습니다.');
+                  },
+                },
+              ]
+            );
+          } else {
+            Alert.alert('사용자의 토큰이 없습니다.');
+          }
+        } else {
+          Alert.alert('유효하지 않은 사용자 코드입니다.');
+        }
       } else {
         Alert.alert('유효하지 않은 사용자 코드입니다.');
       }
@@ -465,7 +477,7 @@ const ParentaccountScreen = ({ navigateTo }) => {
       console.error('보호자 등록 요청 중 오류 발생:', error);
       Alert.alert('보호자 등록 요청 중 오류가 발생했습니다. 나중에 다시 시도해주세요.');
     }
-};
+  };
 
   return (
     <>
