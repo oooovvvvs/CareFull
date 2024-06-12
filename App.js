@@ -148,11 +148,15 @@ const CalendarScreen = ({ navigateTo }) => { //캘린더
 };
 
 //알림을 저장
-const storeNotification = async (message) => {
-  const storedNotifications = await AsyncStorage.getItem('notifications');
-  const notificationsArray = storedNotifications ? JSON.parse(storedNotifications) : [];
-  notificationsArray.push(message);
-  await AsyncStorage.setItem('notifications', JSON.stringify(notificationsArray));
+const storeNotification = async (notification) => {
+  try {
+    const storedNotifications = await AsyncStorage.getItem('notifications');
+    const notifications = storedNotifications ? JSON.parse(storedNotifications) : [];
+    notifications.push(notification);
+    await AsyncStorage.setItem('notifications', JSON.stringify(notifications));
+  } catch (error) {
+    console.error('알림 저장 중 오류 발생:', error);
+  }
 };
 
 //알림화면
@@ -165,7 +169,7 @@ const SettingsScreen = ({ navigateTo }) => {
 
     // 백그라운드 및 종료 상태에서 알림을 수신했을 때 처리하는 리스너
     messaging().setBackgroundMessageHandler(async remoteMessage => {
-      await storeNotification(remoteMessage.notification.body); // 푸쉬 메시지 호출
+      await storeNotification(remoteMessage.notification.body); 
     });
 
     // 포그라운드 상태에서 알림을 수신했을 때 처리하는 리스너
@@ -207,6 +211,7 @@ const SettingsScreen = ({ navigateTo }) => {
     </View>
   );
 };
+
 
 // 개인정보 관리
 const PrivateScreen = ({ navigateTo }) => {
@@ -353,7 +358,7 @@ const NameInputScreen = ({ navigateTo }) => {
       // Firebase Realtime Database에 닉네임, 고유 번호 및 FCM 토큰 저장
       await database().ref('users').push({ name, userCode, fcmToken });
 
-      Alert.alert('계정이생성되었습니다.');
+      Alert.alert('계정이 생성되었습니다.');
       navigateTo('Home');
     }
   };
@@ -414,11 +419,12 @@ const ParentaccountScreen = ({ navigateTo }) => {
       const message = {
         notification: {
           title: '보호자 등록 요청',
-          body: `${userName} 님이(가) 보호자 등록을 요청하셨습니다.`, // 사용자 이름 포함
+          body: `${userName} 님이(가) 보호자 등록을 요청하셨습니다.`,
         },
         token: parentToken,
       };
 
+      
       await fetch('https://fcm.googleapis.com/fcm/send', {
         method: 'POST',
         headers: {
