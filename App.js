@@ -24,6 +24,18 @@ if (!firebase.apps.length) {
   });
 }
 
+// FCM 초기화 및 권한 요청
+const initializeFCM = async () => {
+  const authStatus = await messaging().requestPermission();
+  const enabled =
+    authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+    authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+  if (enabled) {
+    console.log('알림 권한이 부여되었습니다.');
+  }
+};
+
 const HomeScreen = ({ navigateTo }) => ( //상단 네비게이션 바
   <><ScrollView style={styles.container}>
     <View style={styles.header}>
@@ -134,14 +146,66 @@ const CalendarScreen = ({ navigateTo }) => { //캘린더
   );
 };
 
-// 알림 화면
-const SettingsScreen = ({ navigateTo }) => (
-  <View style={styles.header}>
-    <TouchableOpacity onPress={() => navigateTo('Home')}>
-      <Text style={{fontSize:30, fontWeight:'bold', color:"black"}}>← 알림</Text>
-    </TouchableOpacity>
-  </View>
-);
+//알림을 저장
+const storeNotification = async (message) => {
+  const storedNotifications = await AsyncStorage.getItem('notifications');
+  const notificationsArray = storedNotifications ? JSON.parse(storedNotifications) : [];
+  notificationsArray.push(message);
+  await AsyncStorage.setItem('notifications', JSON.stringify(notificationsArray));
+};
+
+//알림화면
+const SettingsScreen = ({ navigateTo }) => {
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    // FCM 초기화
+    initializeFCM();
+
+    // 백그라운드 및 종료 상태에서 알림을 수신했을 때 처리하는 리스너
+    messaging().setBackgroundMessageHandler(async remoteMessage => {
+      await storeNotification(remoteMessage.notification.body); // 푸쉬 메시지 호출
+    });
+
+    // 포그라운드 상태에서 알림을 수신했을 때 처리하는 리스너
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      Alert.alert(remoteMessage.notification.title, remoteMessage.notification.body);
+      await storeNotification(remoteMessage.notification.body);
+    });
+
+    // 컴포넌트 언마운트 시 리스너 해제
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      const storedNotifications = await AsyncStorage.getItem('notifications');
+      setNotifications(storedNotifications ? JSON.parse(storedNotifications) : []);
+    };
+    fetchNotifications();
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigateTo('Home')}>
+          <Text style={{ fontSize: 30, fontWeight: 'bold', color: 'black' }}>← 알림</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.notificationsContainer}>
+        {notifications.length > 0 ? (
+          notifications.map((notification, index) => (
+            <Text key={index} style={styles.notificationText}>
+              {notification}
+            </Text>
+          ))
+        ) : (
+          <Text style={styles.notificationText}>알림이 없습니다.</Text>
+        )}
+      </View>
+    </View>
+  );
+};
 
 // 개인정보 관리
 const PrivateScreen = ({ navigateTo }) => {
@@ -283,6 +347,7 @@ const generateUserCode = () => {
   return code;
 };
 
+//보호자 등록
 const ParentaccountScreen = ({ navigateTo }) => {
   const inputRefs = [useRef(), useRef(), useRef(), useRef()];
   const [parentCodes, setParentCodes] = useState(['', '', '', '']);
@@ -323,7 +388,7 @@ const ParentaccountScreen = ({ navigateTo }) => {
       const message = {
         notification: {
           title: '보호자 등록 요청',
-          body: `n`,
+          body: `${userName} 님이(가) 보호자 등록을 요청하셨습니다.`, // 사용자 이름 포함
         },
         token: parentToken,
       };
@@ -767,9 +832,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end', // 오른쪽 정렬로 변경
     marginVertical: 30, // 버튼을 아래로 내릴 수 있는 여백 조절
   },
+
+  //알림 화면
+  notificationsContainer: {
+    flex: 1,
+  },
+  notificationText: {
+    fontSize: 18,
+    color: 'black',
+    marginBottom: 10,
+  },
   
-  
-  
+
 });
 
 export default App;
