@@ -12,6 +12,8 @@ import 'react-native-gesture-handler';
 import PushNotification from 'react-native-push-notification'; // 푸쉬 알림
 
 
+// 커밋용 텍스트
+
 //파이어베이스 
 if (!firebase.apps.length) {
   firebase.initializeApp({
