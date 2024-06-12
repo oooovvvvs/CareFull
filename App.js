@@ -3,12 +3,13 @@ import React, { useState, useEffect, useRef  } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform ,  BackHandler , ToastAndroid  } from 'react-native';
 import {Calendar, LocaleConfig} from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BleManager } from 'react-native-ble-plx'; // 블루투스 모듈 import
+import BleManager from 'react-native-ble-plx'; // 블루투스 모듈 import
 import { request, PERMISSIONS } from 'react-native-permissions';
 import firebase from '@react-native-firebase/app';
 import database from '@react-native-firebase/database';
 import messaging from '@react-native-firebase/messaging';
 import 'react-native-gesture-handler';
+import PushNotification from 'react-native-push-notification'; // 푸쉬 알림
 
 
 //파이어베이스 
@@ -499,6 +500,7 @@ const ParentaccountScreen = ({ navigateTo }) => {
 const MedicalScreen = ({ navigateTo }) => {
   const bleManagerRef = useRef(new BleManager());
   const [isScanning, setIsScanning] = useState(false);
+  const [connectedDevice, setConnectedDevice] = useState(null);
 
   const requestBluetoothPermissions = async () => {
     if (Platform.OS === 'android') {
@@ -559,9 +561,17 @@ const MedicalScreen = ({ navigateTo }) => {
         if (device && device.name === 'YourPillBoxName') {
           bleManagerRef.current.stopDeviceScan();
           setIsScanning(false);
-          device.connect().then((connectedDevice) => {
-            console.log('디바이스에 연결되었습니다:', connectedDevice);
-          }).catch((connectError) => {
+          device.connect()
+            .then((connectedDevice) => {
+              console.log('디바이스에 연결되었습니다:', connectedDevice);
+              setConnectedDevice(connectedDevice);
+              return connectedDevice.discoverAllServicesAndCharacteristics();
+          })
+          .then((connectedDevice) => {
+            // 연결된 장치에서 데이터를 수신
+            setupNotification(connectedDevice);
+          })
+            .catch((connectError) => {
             console.error('디바이스 연결 중 오류 발생:', connectError);
             Alert.alert('연결 오류', '디바이스 연결 중 오류가 발생했습니다.');
           });
@@ -572,6 +582,24 @@ const MedicalScreen = ({ navigateTo }) => {
       Alert.alert('스캔 시작 오류', '블루투스 스캔을 시작하는 동안 오류가 발생했습니다.');
       setIsScanning(false);
     }
+  };
+
+  const setupNotification = (device) => {
+    device.monitorCharacteristicForService('serviceUUID', 'characteristicUUID', (error, characteristic) => {
+      if (error) {
+        console.error('특성 모니터링 중 오류 발생:', error);
+        return;
+      }
+
+      const receivedValue = new TextDecoder().decode(characteristic.value);
+      console.log('Received data:', receivedValue); // 블루투스로 받은 데이터
+
+      if (receivedValue == 1) {
+        PushNotification.localNotification({
+          message: "신호 받음 알림!", // 푸시 알림 메시지
+        });
+      }
+    });
   };
 
   useEffect(() => {
