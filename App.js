@@ -3,14 +3,16 @@ import React, { useState, useEffect, useRef  } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform ,  BackHandler , ToastAndroid , FlatList } from 'react-native';
 import {Calendar, LocaleConfig} from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BleManager } from 'react-native-ble-plx'; // 블루투스 모듈 import
+import BleManager from 'react-native-ble-plx'; // 블루투스 모듈 import
 import { request, PERMISSIONS } from 'react-native-permissions';
 import firebase from '@react-native-firebase/app';
 import database from '@react-native-firebase/database';
 import messaging from '@react-native-firebase/messaging';
 import 'react-native-gesture-handler';
+import PushNotification from 'react-native-push-notification'; // 푸쉬 알림
 
 
+// 커밋용 텍스트
 
 //파이어베이스 
 if (!firebase.apps.length) {
@@ -176,33 +178,41 @@ const CalendarScreen = ({ navigateTo }) => { //캘린더
         </TouchableOpacity>
       </View>
       <View style={styles.calendarContainer}>
+      <View style={styles.Calendar}>
+          <Calendar
+            onDayPress={day => { setSelected(day.dateString); }}
+            markedDates={{ [selected]: { selected: true, disableTouchEvent: true, selectedDotColor: 'orange' } }}
+          />
+        </View>
         <View style={styles.CalnotiList}>
           <ScrollView ref={scrollViewRef}>
             {notifications.map((notification, index) => (
               <Text key={index} style={styles.CalnotiText}>{notification}</Text>
             ))}
           </ScrollView>
-          <Button title="Add Dummy Notification" onPress={addDummyNotification} />
+          <Button title="Add Dummy Notification" onPress={addDummyNotification}/>
         </View>
-        <View style={styles.calendar}>
-          <Calendar
-            onDayPress={day => { setSelected(day.dateString); }}
-            markedDates={{ [selected]: { selected: true, disableTouchEvent: true, selectedDotColor: 'orange' } }}
-          />
-        </View>
+        
+        
+        
       </View>
     </>
   );
 };
 
-//알림을 저장 
+//알림을 저장
 {/*
-const storeNotification = async (message) => {
-  const storedNotifications = await AsyncStorage.getItem('notifications');
-  const notificationsArray = storedNotifications ? JSON.parse(storedNotifications) : [];
-  notificationsArray.push(message);
-  await AsyncStorage.setItem('notifications', JSON.stringify(notificationsArray));
-}; */}
+const storeNotification = async (notification) => {
+  try {
+    const storedNotifications = await AsyncStorage.getItem('notifications');
+    const notifications = storedNotifications ? JSON.parse(storedNotifications) : [];
+    notifications.push(notification);
+    await AsyncStorage.setItem('notifications', JSON.stringify(notifications));
+  } catch (error) {
+    console.error('알림 저장 중 오류 발생:', error);
+  }
+};
+*/}
 
 //알림화면
 const SettingsScreen = ({ navigateTo }) => {
@@ -214,7 +224,7 @@ const SettingsScreen = ({ navigateTo }) => {
 
     // 백그라운드 및 종료 상태에서 알림을 수신했을 때 처리하는 리스너
     messaging().setBackgroundMessageHandler(async remoteMessage => {
-      await storeNotification(remoteMessage.notification.body); // 푸쉬 메시지 호출
+      await storeNotification(remoteMessage.notification.body); 
     });
 
     // 포그라운드 상태에서 알림을 수신했을 때 처리하는 리스너
@@ -256,6 +266,7 @@ const SettingsScreen = ({ navigateTo }) => {
     </View>
   );
 };
+
 
 // 개인정보 관리
 const PrivateScreen = ({ navigateTo }) => {
@@ -402,7 +413,7 @@ const NameInputScreen = ({ navigateTo }) => {
       // Firebase Realtime Database에 닉네임, 고유 번호 및 FCM 토큰 저장
       await database().ref('users').push({ name, userCode, fcmToken });
 
-      Alert.alert('계정이생성되었습니다.');
+      Alert.alert('계정이 생성되었습니다.');
       navigateTo('Home');
     }
   };
@@ -463,11 +474,12 @@ const ParentaccountScreen = ({ navigateTo }) => {
       const message = {
         notification: {
           title: '보호자 등록 요청',
-          body: `${userName} 님이(가) 보호자 등록을 요청하셨습니다.`, // 사용자 이름 포함
+          body: `${userName} 님이(가) 보호자 등록을 요청하셨습니다.`,
         },
         token: parentToken,
       };
 
+      
       await fetch('https://fcm.googleapis.com/fcm/send', {
         method: 'POST',
         headers: {
@@ -485,28 +497,40 @@ const ParentaccountScreen = ({ navigateTo }) => {
     try {
       const parentCode = parentCodes.join('');
       const user = await searchUserByParentCode(parentCode);
+      console.log('검색된 사용자:', user); // 사용자 데이터 로그 출력
   
-      if (user && user[parentCode] && user[parentCode].fcmToken) {
-        const parentToken = user[parentCode].fcmToken;
-        await sendNotificationToParent(parentToken, userName);
-        Alert.alert(
-          '보호자로 등록하시겠습니까?',
-          '',
-          [
-            {
-              text: '취소',
-              style: 'cancel',
-            },
-            {
-              text: '확인',
-              onPress: async () => {
-                Alert.alert('보호자에게 요청이 전송되었습니다.');
-              },
-            },
-          ]
-        );
-      } else if (user) {
-        Alert.alert('보호자의 토큰이 없습니다.');
+      if (user) {
+        const userKeys = Object.keys(user);
+        if (userKeys.length > 0) {
+          const userKey = userKeys[0];
+          const parentData = user[userKey];
+          console.log('부모 데이터:', parentData); // 부모 데이터 로그 출력
+  
+          if (parentData.fcmToken) {
+            const parentToken = parentData.fcmToken;
+            Alert.alert(
+              '보호자로 등록하시겠습니까?',
+              '',
+              [
+                {
+                  text: '취소',
+                  style: 'cancel',
+                },
+                {
+                  text: '확인',
+                  onPress: async () => {
+                    await sendNotificationToParent(parentToken, userName);
+                    Alert.alert('보호자에게 요청이 전송되었습니다.');
+                  },
+                },
+              ]
+            );
+          } else {
+            Alert.alert('사용자의 토큰이 없습니다.');
+          }
+        } else {
+          Alert.alert('유효하지 않은 사용자 코드입니다.');
+        }
       } else {
         Alert.alert('유효하지 않은 사용자 코드입니다.');
       }
@@ -514,7 +538,7 @@ const ParentaccountScreen = ({ navigateTo }) => {
       console.error('보호자 등록 요청 중 오류 발생:', error);
       Alert.alert('보호자 등록 요청 중 오류가 발생했습니다. 나중에 다시 시도해주세요.');
     }
-};
+  };
 
   return (
     <>
@@ -549,6 +573,7 @@ const ParentaccountScreen = ({ navigateTo }) => {
 const MedicalScreen = ({ navigateTo }) => {
   const bleManagerRef = useRef(new BleManager());
   const [isScanning, setIsScanning] = useState(false);
+  const [connectedDevice, setConnectedDevice] = useState(null);
 
   const requestBluetoothPermissions = async () => {
     if (Platform.OS === 'android') {
@@ -609,9 +634,17 @@ const MedicalScreen = ({ navigateTo }) => {
         if (device && device.name === 'YourPillBoxName') {
           bleManagerRef.current.stopDeviceScan();
           setIsScanning(false);
-          device.connect().then((connectedDevice) => {
-            console.log('디바이스에 연결되었습니다:', connectedDevice);
-          }).catch((connectError) => {
+          device.connect()
+            .then((connectedDevice) => {
+              console.log('디바이스에 연결되었습니다:', connectedDevice);
+              setConnectedDevice(connectedDevice);
+              return connectedDevice.discoverAllServicesAndCharacteristics();
+          })
+          .then((connectedDevice) => {
+            // 연결된 장치에서 데이터를 수신
+            setupNotification(connectedDevice);
+          })
+            .catch((connectError) => {
             console.error('디바이스 연결 중 오류 발생:', connectError);
             Alert.alert('연결 오류', '디바이스 연결 중 오류가 발생했습니다.');
           });
@@ -622,6 +655,24 @@ const MedicalScreen = ({ navigateTo }) => {
       Alert.alert('스캔 시작 오류', '블루투스 스캔을 시작하는 동안 오류가 발생했습니다.');
       setIsScanning(false);
     }
+  };
+
+  const setupNotification = (device) => {
+    device.monitorCharacteristicForService('serviceUUID', 'characteristicUUID', (error, characteristic) => {
+      if (error) {
+        console.error('특성 모니터링 중 오류 발생:', error);
+        return;
+      }
+
+      const receivedValue = new TextDecoder().decode(characteristic.value);
+      console.log('Received data:', receivedValue); // 블루투스로 받은 데이터
+
+      if (receivedValue == 1) {
+        PushNotification.localNotification({
+          message: "신호 받음 알림!", // 푸시 알림 메시지
+        });
+      }
+    });
   };
 
   useEffect(() => {
@@ -770,13 +821,15 @@ const styles = StyleSheet.create({
   calendarContainer: {
     flex: 1,
   },
+
   Calendar: { //캘린더
-    marginTop: 20,
+    marginTop: 0,
     flex: 1,
-    backgroundColor: '#fff000',
+    backgroundColor: '#fff',
     dayTextAtIndex0: { color: 'red'},
     datTextAtOmdex6: { color:'blue'},
     zIndex: 1,
+    
   },
   Calnotibackground: { // 캘린더 알림 목록 백그라운드
     padding: 15,
@@ -784,15 +837,16 @@ const styles = StyleSheet.create({
     borderBottomColor: '#ddd',
     
   },
-  CalnotiList:{
+  CalnotiList:{  //가상알림 목록
     position: 'absolute',
-    top: 0,
     left: 0,
     right: 0,
     bottom: 0,
     zIndex: 0,
     padding: 10,
-    backgroundColor: '#f0f8ff'
+    backgroundColor: '#f0f8ff',
+    height: '50%',
+    
   },
   CalnotiText: { // 캘린더 알림 리스트
     fontSize: 20,
