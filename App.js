@@ -1,6 +1,6 @@
 // App.js
 import React, { useState, useEffect, useRef  } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform ,  BackHandler , ToastAndroid  } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform ,  BackHandler , ToastAndroid , FlatList } from 'react-native';
 import {Calendar, LocaleConfig} from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BleManager } from 'react-native-ble-plx'; // 블루투스 모듈 import
@@ -9,6 +9,7 @@ import firebase from '@react-native-firebase/app';
 import database from '@react-native-firebase/database';
 import messaging from '@react-native-firebase/messaging';
 import 'react-native-gesture-handler';
+
 
 
 //파이어베이스 
@@ -36,9 +37,9 @@ const initializeFCM = async () => {
   }
 };
 
-const HomeScreen = ({ navigateTo }) => ( 
+const HomeScreen = ({ navigateTo }) => ( //상단 네비게이션 바
   <><ScrollView style={styles.container}>
-    <View style={styles.header}>       
+    <View style={styles.header}>
       <Text style={styles.title}>carefull</Text>
       <View style={styles.headerIcons}>
         <TouchableOpacity onPress={() => navigateTo('Calendar')}>
@@ -102,6 +103,7 @@ const HomeScreen = ({ navigateTo }) => (
     </ScrollView>
   </ScrollView>
   
+  
   <View style={styles.bottomNavigation}> 
       <TouchableOpacity onPress={() => navigateTo('Home')}>
         <Image style={styles.bottomIcon} source={require('./assets/pill_00.png')} />
@@ -115,6 +117,23 @@ const HomeScreen = ({ navigateTo }) => (
     </View></>
 );
 
+const BluetoothContext = React.createContext();
+
+const BluetoothProvider = ({ children }) => {
+  const [receivedData, setReceivedData] = useState(null);
+
+  return (
+    <BluetoothContext.Provider value={{ receivedData, setReceivedData }}>
+      {children}
+    </BluetoothContext.Provider>
+  );
+};
+const storeNotification = async (message) => {
+  const storedNotifications = await AsyncStorage.getItem('notifications');
+  const notificationsArray = storedNotifications ? JSON.parse(storedNotifications) : [];
+  notificationsArray.push(message);
+  await AsyncStorage.setItem('notifications', JSON.stringify(notificationsArray));
+};
 const CalendarScreen = ({ navigateTo }) => { //캘린더
   LocaleConfig.locales['kr'] = {
     monthNames: [
@@ -128,31 +147,62 @@ const CalendarScreen = ({ navigateTo }) => { //캘린더
   
   LocaleConfig.defaultLocale = 'kr';
   const [selected, setSelected] = useState('');
+  const [notifications, setNotifications] = useState([]);
+  const scrollViewRef = useRef();
+
+  useEffect(() => {
+    const loadNotifications = async () => {
+      const storedNotifications = await AsyncStorage.getItem('notifications');
+      const notificationsArray = storedNotifications ? JSON.parse(storedNotifications) : [];
+      setNotifications(notificationsArray);
+    };
+    loadNotifications();
+  }, []);
+
+  const addDummyNotification = async () => {
+    const now = new Date();
+    const formattedTime = `${now.getMonth() + 1}월 ${now.getDate()}일 ${now.getHours()}시 ${now.getMinutes()}분`;
+    const dummyNotification = `가상 알림: ${formattedTime}`;
+    await storeNotification(dummyNotification);
+    setNotifications((prevNotifications) => [...prevNotifications, dummyNotification]);
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  };
+
   return (
-    <><View style={styles.header}>
-      <TouchableOpacity onPress={() => navigateTo('Home')}>
-        <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 캘린더</Text>
-      </TouchableOpacity>
-    </View>
-    <View style={styles.Calendar}>
-        <Calendar
-          onDayPress={day => {
-            setSelected(day.dateString);
-          } }
-          markedDates={{
-            [selected]: { selected: true, disableTouchEvent: true, selectedDotColor: 'orange' }
-          }} />
-      </View></>
+    <>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigateTo('Home')}>
+          <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 캘린더</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.calendarContainer}>
+        <View style={styles.CalnotiList}>
+          <ScrollView ref={scrollViewRef}>
+            {notifications.map((notification, index) => (
+              <Text key={index} style={styles.CalnotiText}>{notification}</Text>
+            ))}
+          </ScrollView>
+          <Button title="Add Dummy Notification" onPress={addDummyNotification} />
+        </View>
+        <View style={styles.calendar}>
+          <Calendar
+            onDayPress={day => { setSelected(day.dateString); }}
+            markedDates={{ [selected]: { selected: true, disableTouchEvent: true, selectedDotColor: 'orange' } }}
+          />
+        </View>
+      </View>
+    </>
   );
 };
 
-//알림을 저장
+//알림을 저장 
+{/*
 const storeNotification = async (message) => {
   const storedNotifications = await AsyncStorage.getItem('notifications');
   const notificationsArray = storedNotifications ? JSON.parse(storedNotifications) : [];
   notificationsArray.push(message);
   await AsyncStorage.setItem('notifications', JSON.stringify(notificationsArray));
-};
+}; */}
 
 //알림화면
 const SettingsScreen = ({ navigateTo }) => {
@@ -674,9 +724,11 @@ const App = () => {
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      {renderScreen()}
-    </View>
+    <BluetoothProvider>
+      <View style={{ flex: 1 }}>
+        {renderScreen()}
+      </View>
+    </BluetoothProvider>
   );
 };
 
@@ -695,7 +747,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    color: '',
     backgroundColor: '#fff',
     padding: 20,
   },
@@ -716,14 +767,43 @@ const styles = StyleSheet.create({
     width: '80%',
   },
 
+  calendarContainer: {
+    flex: 1,
+  },
   Calendar: { //캘린더
     marginTop: 20,
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#fff000',
     dayTextAtIndex0: { color: 'red'},
-    datTextAtOmdex6: { color:'blue'}
+    datTextAtOmdex6: { color:'blue'},
+    zIndex: 1,
+  },
+  Calnotibackground: { // 캘린더 알림 목록 백그라운드
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+    
+  },
+  CalnotiList:{
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 0,
+    padding: 10,
+    backgroundColor: '#f0f8ff'
+  },
+  CalnotiText: { // 캘린더 알림 리스트
+    fontSize: 20,
+    margin: 10,
+    fontWeight: 'bold',
+    zIndex: 0,
+    textAlign: 'center',
   },
 
+
+  
   // 보호자 코드
   input: {
     borderWidth: 1,
@@ -824,7 +904,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
   },
-  
+
   //사용자 코드 컨테이너
   codeContainer: {
     padding: 10,
@@ -864,6 +944,7 @@ const styles = StyleSheet.create({
     color: 'black',
     marginBottom: 10,
   },
+  
   
 
 });
