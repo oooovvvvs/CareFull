@@ -571,9 +571,10 @@ const ParentaccountScreen = ({ navigateTo }) => {
 };
 
 const MedicalScreen = ({ navigateTo }) => {
-  const bleManagerRef = React.useRef(new BleManager());
-  const [isScanning, setIsScanning] = React.useState(false);
-  const [connectedDevice, setConnectedDevice] = React.useState(null);
+  const bleManagerRef = useRef(new BleManager());
+  const [isScanning, setIsScanning] = useState(false);
+  const [connectedDevice, setConnectedDevice] = useState(null);
+  const [connectedDevices, setConnectedDevices] = useState([]);
 
   const requestBluetoothPermissions = async () => {
     if (Platform.OS === 'android') {
@@ -646,7 +647,15 @@ const MedicalScreen = ({ navigateTo }) => {
             const connectedDevice = await device.connect();
             console.log('HC-06 모듈에 연결되었습니다:', connectedDevice);
             setConnectedDevice(connectedDevice);
+            setConnectedDevices(prevDevices => [...prevDevices, { id: connectedDevice.id, name: connectedDevice.name }]);
             showToast('HC-06 모듈에 연결 되었습니다');
+            setupNotification(connectedDevice);
+
+             // Check if the device is already in the list
+             if (!connectedDevices.some(dev => dev.id === connectedDevice.id)) {
+              setConnectedDevices(prevDevices => [...prevDevices, { id: connectedDevice.id, name: connectedDevice.name }]);
+            }
+
             // 연결 후 필요한 동작을 수행할 수 있습니다.
           } catch (connectError) {
             console.error('HC-06 모듈 연결 중 오류 발생:', connectError);
@@ -661,17 +670,68 @@ const MedicalScreen = ({ navigateTo }) => {
     }
   };
 
+  const handleDeviceDisconnect = async (device) => {
+    try {
+      await device.cancelConnection();
+      // 연결 해제 후 연결된 기기 목록에서 제거하지 않고 상태 변화 없음
+    } catch (error) {
+      console.error('기기 연결 해제 중 오류 발생:', error);
+      Alert.alert('연결 해제 오류', '기기 연결 해제 중 오류가 발생했습니다.');
+    }
+  };
+
+  const setupNotification = (device) => {
+    device.monitorCharacteristicForService('serviceUUID', 'characteristicUUID', (error, characteristic) => {
+      if (error) {
+        console.error('특성 모니터링 중 오류 발생:', error);
+        return;
+      }
+
+      const receivedValue = new TextDecoder().decode(characteristic.value);
+      console.log('Received data:', receivedValue); // 블루투스로 받은 데이터
+
+      if (receivedValue == 1) {
+        showToast('11111');
+
+        PushNotification.localNotification({
+          message: "신호 받음 알림!", // 푸시 알림 메시지
+        });
+      }
+    });
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
-          <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 내 약통 관리</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.content}>
-        <TouchableOpacity onPress={handleRegisterPillBox} style={styles.registrationButton}>
-          <Text style={{ fontSize: 24, fontWeight: 'bold', color: "black" }}>내 약통 등록</Text>
-        </TouchableOpacity>
+    <View style={styles.header}>
+    <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
+    <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 내 약통 관리</Text>
+    </TouchableOpacity>
+    </View>
+    <View style={styles.content}>
+    <TouchableOpacity onPress={handleRegisterPillBox} style={styles.registrationButton}>
+    <Text style={{ fontSize: 24, fontWeight: 'bold', color: "black" }}>내 약통 등록</Text>
+    </TouchableOpacity>
+    </View>
+
+      <View style={styles.medi}>
+      <Text style={{ fontSize: 20, fontWeight: 'bold', color: "black" }}> 등록된 기기 </Text>
+        <FlatList
+          data={connectedDevices}
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.deviceItem}
+              onPress={() => handleDeviceDisconnect(item)}
+            >
+              <Text>{item.name}</Text>
+              <Text>{item.id}</Text>
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={() => (
+            
+            <Text style={{ alignSelf: 'center', marginTop: 20 }}>연결된 기기가 없습니다.</Text>
+          )}
+        />
       </View>
     </View>
   );
@@ -970,6 +1030,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   notificationText: {
+    fontSize: 18,
+    color: 'black',
+    marginBottom: 10,
+  },
+
+  medi: {
     fontSize: 18,
     color: 'black',
     marginBottom: 10,
