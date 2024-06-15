@@ -316,7 +316,6 @@ const PrivateScreen = ({ navigateTo }) => {
       </View>
     
     
-    <View style={styles.header}>
   
       <View style={styles.nickname}>
       <Text style={{ fontSize: 25, fontWeight: 'bold', color: 'black', marginBottom: 15 }}>닉네임: {name}</Text>
@@ -333,7 +332,6 @@ const PrivateScreen = ({ navigateTo }) => {
           ))}
         </View>
       </View>
-    </View>
     </>
   );
 };
