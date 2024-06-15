@@ -649,8 +649,13 @@ const MedicalScreen = ({ navigateTo }) => {
             setConnectedDevice(connectedDevice);
             setConnectedDevices(prevDevices => [...prevDevices, { id: connectedDevice.id, name: connectedDevice.name }]);
             showToast('HC-06 모듈에 연결 되었습니다');
+<<<<<<< HEAD
             
             
+=======
+
+           
+>>>>>>> d82e483e043ce989cd2089e2bfececc69980be06
             // 연결 후 필요한 동작을 수행할 수 있습니다.
           } catch (connectError) {
             console.error('HC-06 모듈 연결 중 오류 발생:', connectError);
@@ -678,15 +683,36 @@ const MedicalScreen = ({ navigateTo }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
-          <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 내 약통 관리</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.content}>
-        <TouchableOpacity onPress={handleRegisterPillBox} style={styles.registrationButton}>
-          <Text style={{ fontSize: 24, fontWeight: 'bold', color: "black" }}>내 약통 등록</Text>
-        </TouchableOpacity>
+    <View style={styles.header}>
+    <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
+    <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 내 약통 관리</Text>
+    </TouchableOpacity>
+    </View>
+    <View style={styles.content}>
+    <TouchableOpacity onPress={handleRegisterPillBox} style={styles.registrationButton}>
+    <Text style={{ fontSize: 24, fontWeight: 'bold', color: "black" }}>내 약통 등록</Text>
+    </TouchableOpacity>
+    </View>
+
+      <View style={styles.medi}>
+      <Text style={{ fontSize: 20, fontWeight: 'bold', color: "black" }}> 등록된 기기 </Text>
+        <FlatList
+          data={connectedDevices}
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.deviceItem}
+              onPress={() => handleDeviceDisconnect(item)}
+            >
+              <Text>{item.name}</Text>
+              <Text>{item.id}</Text>
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={() => (
+            
+            <Text style={{ alignSelf: 'center', marginTop: 20 }}>연결된 기기가 없습니다.</Text>
+          )}
+        />
       </View>
       
       <View style={styles.medi}>
@@ -1006,6 +1032,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   notificationText: {
+    fontSize: 18,
+    color: 'black',
+    marginBottom: 10,
+  },
+
+  medi: {
     fontSize: 18,
     color: 'black',
     marginBottom: 10,
