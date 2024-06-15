@@ -12,14 +12,6 @@ import 'react-native-gesture-handler';
 import PushNotification from 'react-native-push-notification'; // 푸쉬 알림
 
 
-const SplashScreen = () => {
-  return (
-    <View style={{flex: 1, justifyContent: 'center', backgroundColor: '#fff',}}>
-      <Text style={styles.SplashText}>Carefull</Text>
-    </View>
-  );
-};
-
 // 커밋용 텍스트
 
 //파이어베이스 
@@ -316,7 +308,7 @@ const PrivateScreen = ({ navigateTo }) => {
   }, []);
 
   return (
-    <><View style={styles.container}>
+    <>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
           <Text style={{ fontSize: 30, fontWeight: 'bold', color: 'black' }}>← 사용자 코드</Text>
@@ -336,12 +328,11 @@ const PrivateScreen = ({ navigateTo }) => {
         <View style={styles.codeContainer}>
           {splitUserCode(userCode).map((part, index) => (
             <View key={index} style={styles.codePartContainer}>
-              <Text style={{ color: '#000'}}>{part}</Text>
+              <Text style={styles.codePart}>{part}</Text>
             </View>
           ))}
         </View>
       </View>
-    </View>
     </View>
     </>
   );
@@ -350,7 +341,7 @@ const PrivateScreen = ({ navigateTo }) => {
 
 //사용자 정보
 const UserInfo = ({ navigateTo }) => (
-  <><View style={styles.container}>
+  <>
     <View style={styles.header}>
       <TouchableOpacity onPress={() => navigateTo('Home')}>
         <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 사용자 정보</Text>
@@ -372,7 +363,6 @@ const UserInfo = ({ navigateTo }) => (
       <Text style={{ fontSize: 15, color: "black", marginBottom: 15 }}>내 약통 관리</Text>
       </TouchableOpacity>
 
-    </View>
     </View>
   </>
 );
@@ -448,7 +438,6 @@ const ParentaccountScreen = ({ navigateTo }) => {
   const inputRefs = [useRef(), useRef(), useRef(), useRef()];
   const [parentCodes, setParentCodes] = useState(['', '', '', '']);
   const [userName, setUserName] = useState(''); // 사용자 이름 상태 추가
-  const [registrationComplete, setRegistrationComplete] = useState(false); // 보호자등록 완료 이후 화면
 
   useEffect(() => {
     // AsyncStorage에서 사용자 이름 가져오기
@@ -459,26 +448,6 @@ const ParentaccountScreen = ({ navigateTo }) => {
     fetchUserName();
   }, []);
 
-  useEffect(() => {
-    AsyncStorage.getItem('parentCodes')
-      .then((savedCode) => {
-        if (savedCode) {
-          console.log('저장된 사용자 코드:', savedCode);
-          setUserCode(savedCode); // 저장된 코드를 사용하여 화면에 표시
-        }
-      })
-      .catch(error => {
-        console.log('AsyncStorage에서 사용자 코드를 가져오는 중 오류 발생:', error);
-      });
-  }, []);
-  // 사용자 코드를 4개의 부분으로 나누는 함수
-  const splitUserCode = (code) => {
-    const codeParts = [];
-    for (let i = 0; i < code.length; i += 4) {
-      codeParts.push(code.slice(i, i + 4));
-    }
-    return codeParts;
-  };
   const handleCodeChange = (text, index) => {
     const newParentCodes = [...parentCodes];
     newParentCodes[index] = text.replace(/\s/g, ''); // 공백 제거
@@ -552,7 +521,6 @@ const ParentaccountScreen = ({ navigateTo }) => {
                   onPress: async () => {
                     await sendNotificationToParent(parentToken, userName);
                     Alert.alert('보호자에게 요청이 전송되었습니다.');
-                    setRegistrationComplete(true);  // 등록 완료 상태로 설정
                   },
                 },
               ]
@@ -571,32 +539,6 @@ const ParentaccountScreen = ({ navigateTo }) => {
       Alert.alert('보호자 등록 요청 중 오류가 발생했습니다. 나중에 다시 시도해주세요.');
     }
   };
-  if (registrationComplete) { // 보호자등록 완료이후 화면
-    return (
-      <><View style={styles.header}>
-        <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
-          <Text style={{ fontSize: 30, fontWeight: 'bold', color: 'black' }}>← 보호자 등록</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.container}>
-        <View style={styles.nickname}>
-          <Text style={{ fontSize: 25, fontWeight: 'bold', color: 'black', marginBottom: 15 }}>{userName}의 보호자</Text>
-        </View>
-
-        <View style={styles.container}>
-          <Text style={{ fontSize: 25, fontWeight: 'bold', color: 'black', marginBottom: 15 }}>보호자 코드</Text>
-          <View style={styles.codeContainer}>
-            {splitUserCode(parentCodes).map((part, index) => (
-              <View key={index} style={styles.codePartContainer}>
-                <Text style={{ color: '#000'}}>{part}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      </View>
-    </>
-    );
-  }
 
   return (
     <>
@@ -661,7 +603,7 @@ const MedicalScreen = ({ navigateTo }) => {
     }
     return true;
   };
-
+  
   const showToast = (message) => {
     if (Platform.OS === 'android') {
       ToastAndroid.show(message, ToastAndroid.SHORT);
@@ -669,7 +611,7 @@ const MedicalScreen = ({ navigateTo }) => {
       Alert.alert(message);
     }
   };
-
+  
   const handleRegisterPillBox = async () => {
     const hasPermission = await requestBluetoothPermissions();
     if (!hasPermission) {
@@ -708,7 +650,7 @@ const MedicalScreen = ({ navigateTo }) => {
             setConnectedDevices(prevDevices => [...prevDevices, { id: connectedDevice.id, name: connectedDevice.name }]);
             showToast('HC-06 모듈에 연결 되었습니다');
             setupNotification(connectedDevice);
-
+          
            
             // 연결 후 필요한 동작을 수행할 수 있습니다.
           } catch (connectError) {
@@ -754,22 +696,22 @@ const MedicalScreen = ({ navigateTo }) => {
 
   return (
     <View style={styles.container}>
-    <View style={styles.header}>
-    <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
-    <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 내 약통 관리</Text>
-    </TouchableOpacity>
-    </View>
-    <View style={styles.content}>
-    <TouchableOpacity onPress={handleRegisterPillBox} style={styles.registrationButton}>
-    <Text style={{ fontSize: 24, fontWeight: 'bold', color: "black" }}>내 약통 등록</Text>
-    </TouchableOpacity>
-    </View>
-
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
+          <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 내 약통 관리</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.content}>
+        <TouchableOpacity onPress={handleRegisterPillBox} style={styles.registrationButton}>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', color: "black" }}>내 약통 등록</Text>
+        </TouchableOpacity>
+      </View>
+  
       <View style={styles.medi}>
-      <Text style={{ fontSize: 20, fontWeight: 'bold', color: "black" }}> 등록된 기기 </Text>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: "black" }}> 등록된 기기 </Text>
         <FlatList
           data={connectedDevices}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item.id.toString()} // Ensure item.id is converted to string if necessary
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.deviceItem}
@@ -780,8 +722,9 @@ const MedicalScreen = ({ navigateTo }) => {
             </TouchableOpacity>
           )}
           ListEmptyComponent={() => (
-            
-            <Text style={{ alignSelf: 'center', marginTop: 20 }}>연결된 기기가 없습니다.</Text>
+            <View style={{ alignItems: 'center', marginTop: 20 }}>
+              <Text>연결된 기기가 없습니다.</Text>
+            </View>
           )}
         />
       </View>
@@ -793,16 +736,6 @@ const App = () => {
   const [currentScreen, setCurrentScreen] = useState('Home');
   const [screenStack, setScreenStack] = useState(['Home']);
   const [lastBackPress, setLastBackPress] = useState(0);
-  const [isSplashVisible, setIsSplashVisible] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsSplashVisible(false);
-      setCurrentScreen('Home');
-    }, 1000); // 1초 후에 Splash 화면 숨김
-
-    return () => clearTimeout(timer); // 컴포넌트가 언마운트될 때 타이머 정리
-  }, []);
 
   useEffect(() => {
     const checkUserName = async () => {
@@ -851,9 +784,6 @@ const App = () => {
   };
 
   const renderScreen = () => {
-    if (isSplashVisible) {
-      return <SplashScreen />;
-    }
     switch (currentScreen) {
       case 'Calendar':
         return <CalendarScreen navigateTo={navigateTo} />;
@@ -885,14 +815,6 @@ const App = () => {
 };
 
 const styles = StyleSheet.create({
-  SplashText: {
-    textAlign: 'center' ,
-    alignContent: 'stretch',
-    color: '#000',
-    fontSize: 30,
-    fontWeight: 'bold',
-    padding: "1%" 
-  },
   backgroundImage: {
     flex: 2,
     resizeMode: 'cover',
@@ -964,6 +886,7 @@ const styles = StyleSheet.create({
     zIndex: 0,
     textAlign: 'center',
   },
+
 
   
   // 보호자 코드
@@ -1112,7 +1035,6 @@ const styles = StyleSheet.create({
     color: 'black',
     marginBottom: 10,
   },
-  
   
 
 });
