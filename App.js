@@ -649,6 +649,7 @@ const MedicalScreen = ({ navigateTo }) => {
             setConnectedDevice(connectedDevice);
             setConnectedDevices(prevDevices => [...prevDevices, { id: connectedDevice.id, name: connectedDevice.name }]);
             showToast('HC-06 모듈에 연결 되었습니다');
+            setupNotification(connectedDevice);
 
            
             // 연결 후 필요한 동작을 수행할 수 있습니다.
@@ -665,6 +666,23 @@ const MedicalScreen = ({ navigateTo }) => {
       setIsScanning(false);
     }
   };
+
+  const setupNotification = (device) => {
+    device.monitorCharacteristicForService('serviceUUID', 'characteristicUUID', (error, characteristic) => {
+
+      showToast('수신 받았습니다.');
+
+      const receivedValue = new TextDecoder().decode(characteristic.value);
+      console.log('Received data:', receivedValue); // 블루투스로 받은 데이터
+
+      if (receivedValue == 1) {
+        PushNotification.localNotification({
+          message: "신호 받음 알림!", // 푸시 알림 메시지
+        });
+      }
+    });
+  };
+
 
   const handleDeviceDisconnect = async (device) => {
     try {
