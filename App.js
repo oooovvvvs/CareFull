@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef  } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform ,  BackHandler , ToastAndroid , FlatList } from 'react-native';
 import {Calendar, LocaleConfig} from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import BleManager from 'react-native-ble-plx'; // 블루투스 모듈 import
+import { BleManager, Device } from 'react-native-ble-plx';
 import { request, PERMISSIONS } from 'react-native-permissions';
 import firebase from '@react-native-firebase/app';
 import database from '@react-native-firebase/database';
@@ -571,9 +571,9 @@ const ParentaccountScreen = ({ navigateTo }) => {
 };
 
 const MedicalScreen = ({ navigateTo }) => {
-  const bleManagerRef = useRef(new BleManager());
-  const [isScanning, setIsScanning] = useState(false);
-  const [connectedDevice, setConnectedDevice] = useState(null);
+  const bleManagerRef = React.useRef(new BleManager());
+  const [isScanning, setIsScanning] = React.useState(false);
+  const [connectedDevice, setConnectedDevice] = React.useState(null);
 
   const requestBluetoothPermissions = async () => {
     if (Platform.OS === 'android') {
@@ -582,15 +582,14 @@ const MedicalScreen = ({ navigateTo }) => {
         PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
       ]);
-
       return (
         granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] === PermissionsAndroid.RESULTS.GRANTED &&
         granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] === PermissionsAndroid.RESULTS.GRANTED &&
         granted[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED
       );
     } else if (Platform.OS === 'ios') {
-      const granted = await request(PERMISSIONS.IOS.BLUETOOTH_PERIPHERAL);
-      return granted === 'granted';
+      // iOS 권한 요청
+      return true; // iOS에서는 미리 설정되어 있어서 추가적인 권한 요청 없이 사용할 수 있습니다.
     }
     return false;
   };
@@ -602,6 +601,14 @@ const MedicalScreen = ({ navigateTo }) => {
       return false;
     }
     return true;
+  };
+
+  const showToast = (message) => {
+    if (Platform.OS === 'android') {
+      ToastAndroid.show(message, ToastAndroid.SHORT);
+    } else {
+      Alert.alert(message);
+    }
   };
 
   const handleRegisterPillBox = async () => {
@@ -623,7 +630,7 @@ const MedicalScreen = ({ navigateTo }) => {
 
       setIsScanning(true);
 
-      bleManagerRef.current.startDeviceScan(null, null, (error, device) => {
+      bleManagerRef.current.startDeviceScan(null, null, async (error, device) => {
         if (error) {
           console.error('스캔 중 오류 발생:', error);
           Alert.alert('스캔 오류', '블루투스 스캔 중 오류가 발생했습니다.');
@@ -631,23 +638,20 @@ const MedicalScreen = ({ navigateTo }) => {
           return;
         }
 
-        if (device && device.name === 'YourPillBoxName') {
-          bleManagerRef.current.stopDeviceScan();
-          setIsScanning(false);
-          device.connect()
-            .then((connectedDevice) => {
-              console.log('디바이스에 연결되었습니다:', connectedDevice);
-              setConnectedDevice(connectedDevice);
-              return connectedDevice.discoverAllServicesAndCharacteristics();
-          })
-          .then((connectedDevice) => {
-            // 연결된 장치에서 데이터를 수신
-            setupNotification(connectedDevice);
-          })
-            .catch((connectError) => {
-            console.error('디바이스 연결 중 오류 발생:', connectError);
-            Alert.alert('연결 오류', '디바이스 연결 중 오류가 발생했습니다.');
-          });
+        if (device && device.name === 'HC-06') {
+          // HC-06 모듈을 찾으면 연결 시도
+          try {
+            bleManagerRef.current.stopDeviceScan();
+            setIsScanning(false);
+            const connectedDevice = await device.connect();
+            console.log('HC-06 모듈에 연결되었습니다:', connectedDevice);
+            setConnectedDevice(connectedDevice);
+            showToast('HC-06 모듈에 연결 되었습니다');
+            // 연결 후 필요한 동작을 수행할 수 있습니다.
+          } catch (connectError) {
+            console.error('HC-06 모듈 연결 중 오류 발생:', connectError);
+            Alert.alert('연결 오류', 'HC-06 모듈 연결 중 오류가 발생했습니다.');
+          }
         }
       });
     } catch (error) {
@@ -656,34 +660,6 @@ const MedicalScreen = ({ navigateTo }) => {
       setIsScanning(false);
     }
   };
-
-  const setupNotification = (device) => {
-    device.monitorCharacteristicForService('serviceUUID', 'characteristicUUID', (error, characteristic) => {
-      if (error) {
-        console.error('특성 모니터링 중 오류 발생:', error);
-        return;
-      }
-
-      const receivedValue = new TextDecoder().decode(characteristic.value);
-      console.log('Received data:', receivedValue); // 블루투스로 받은 데이터
-
-      if (receivedValue == 1) {
-        PushNotification.localNotification({
-          message: "신호 받음 알림!", // 푸시 알림 메시지
-        });
-      }
-    });
-  };
-
-  useEffect(() => {
-    return () => {
-      if (isScanning) {
-        bleManagerRef.current.stopDeviceScan();
-        setIsScanning(false);
-      }
-      bleManagerRef.current.destroy();
-    };
-  }, [isScanning]);
 
   return (
     <View style={styles.container}>
