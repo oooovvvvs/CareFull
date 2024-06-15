@@ -650,16 +650,13 @@ const MedicalScreen = ({ navigateTo }) => {
             setConnectedDevices(prevDevices => [...prevDevices, { id: connectedDevice.id, name: connectedDevice.name }]);
             showToast('HC-06 모듈에 연결 되었습니다');
 
-             // Check if the device is already in the list
-             if (!connectedDevices.some(dev => dev.id === connectedDevice.id)) {
-              setConnectedDevices(prevDevices => [...prevDevices, { id: connectedDevice.id, name: connectedDevice.name }]);
-            }
-
+           
             // 연결 후 필요한 동작을 수행할 수 있습니다.
           } catch (connectError) {
             console.error('HC-06 모듈 연결 중 오류 발생:', connectError);
             Alert.alert('연결 오류', 'HC-06 모듈 연결 중 오류가 발생했습니다.');
           }
+
         }
       });
     } catch (error) {
