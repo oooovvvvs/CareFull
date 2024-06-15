@@ -649,7 +649,6 @@ const MedicalScreen = ({ navigateTo }) => {
             setConnectedDevice(connectedDevice);
             setConnectedDevices(prevDevices => [...prevDevices, { id: connectedDevice.id, name: connectedDevice.name }]);
             showToast('HC-06 모듈에 연결 되었습니다');
-            setupNotification(connectedDevice);
 
              // Check if the device is already in the list
              if (!connectedDevices.some(dev => dev.id === connectedDevice.id)) {
@@ -678,26 +677,6 @@ const MedicalScreen = ({ navigateTo }) => {
       console.error('기기 연결 해제 중 오류 발생:', error);
       Alert.alert('연결 해제 오류', '기기 연결 해제 중 오류가 발생했습니다.');
     }
-  };
-
-  const setupNotification = (device) => {
-    device.monitorCharacteristicForService('serviceUUID', 'characteristicUUID', (error, characteristic) => {
-      if (error) {
-        console.error('특성 모니터링 중 오류 발생:', error);
-        return;
-      }
-
-      const receivedValue = new TextDecoder().decode(characteristic.value);
-      console.log('Received data:', receivedValue); // 블루투스로 받은 데이터
-
-      if (receivedValue == 1) {
-        showToast('11111');
-
-        PushNotification.localNotification({
-          message: "신호 받음 알림!", // 푸시 알림 메시지
-        });
-      }
-    });
   };
 
   return (
