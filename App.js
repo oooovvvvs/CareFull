@@ -693,7 +693,7 @@ const MedicalScreen = ({ navigateTo }) => {
         if (error) {
           console.error('스캔 중 오류 발생:', error);
           Alert.alert('스캔 오류', '블루투스 스캔 중 오류가 발생했습니다.');
-          setIsScanning(false);
+          setIsScanning(false);git
           return;
         }
 
