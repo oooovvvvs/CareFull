@@ -316,7 +316,6 @@ const PrivateScreen = ({ navigateTo }) => {
       </View>
     
     
-    <View style={styles.header}>
   
       <View style={styles.nickname}>
       <Text style={{ fontSize: 25, fontWeight: 'bold', color: 'black', marginBottom: 15 }}>닉네임: {name}</Text>
@@ -333,7 +332,6 @@ const PrivateScreen = ({ navigateTo }) => {
           ))}
         </View>
       </View>
-    </View>
     </>
   );
 };
@@ -635,7 +633,7 @@ const MedicalScreen = ({ navigateTo }) => {
         if (error) {
           console.error('스캔 중 오류 발생:', error);
           Alert.alert('스캔 오류', '블루투스 스캔 중 오류가 발생했습니다.');
-          setIsScanning(false);
+          setIsScanning(false);git
           return;
         }
 
@@ -649,8 +647,9 @@ const MedicalScreen = ({ navigateTo }) => {
             setConnectedDevice(connectedDevice);
             setConnectedDevices(prevDevices => [...prevDevices, { id: connectedDevice.id, name: connectedDevice.name }]);
             showToast('HC-06 모듈에 연결 되었습니다');
-            
-            
+            setupNotification(connectedDevice);
+          
+          
             // 연결 후 필요한 동작을 수행할 수 있습니다.
           } catch (connectError) {
             console.error('HC-06 모듈 연결 중 오류 발생:', connectError);
@@ -664,6 +663,22 @@ const MedicalScreen = ({ navigateTo }) => {
       Alert.alert('스캔 시작 오류', '블루투스 스캔을 시작하는 동안 오류가 발생했습니다.');
       setIsScanning(false);
     }
+  };
+
+  const setupNotification = (receivedValue) => {
+    showToast(`받은 데이터: ${receivedValue}`); // 데이터 값을 먼저 출력
+    if ((receivedValue == '1' || receivedValue == '\x01' || receivedValue == '49')) {
+      showNotification(); // '1'을 받으면 푸시 알림 표시
+      showToast('1 수신 완료');
+    } else {
+      showToast('다시');
+    }
+  };
+
+  const showNotification = () => {
+    PushNotification.localNotification({
+      message: '신호 받음 알림!', // 푸시 알림 메시지
+    });
   };
 
   const handleDeviceDisconnect = async (device) => {
@@ -688,12 +703,12 @@ const MedicalScreen = ({ navigateTo }) => {
           <Text style={{ fontSize: 24, fontWeight: 'bold', color: "black" }}>내 약통 등록</Text>
         </TouchableOpacity>
       </View>
-      
+  
       <View style={styles.medi}>
-      <Text style={{ fontSize: 20, fontWeight: 'bold', color: "black" }}> 등록된 기기 </Text>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: "black" }}> 등록된 기기 </Text>
         <FlatList
           data={connectedDevices}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item.id.toString()} // Ensure item.id is converted to string if necessary
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.deviceItem}
@@ -704,8 +719,9 @@ const MedicalScreen = ({ navigateTo }) => {
             </TouchableOpacity>
           )}
           ListEmptyComponent={() => (
-            
-            <Text style={{ alignSelf: 'center', marginTop: 20 }}>연결된 기기가 없습니다.</Text>
+            <View style={{ alignItems: 'center', marginTop: 20 }}>
+              <Text>연결된 기기가 없습니다.</Text>
+            </View>
           )}
         />
       </View>
@@ -990,6 +1006,12 @@ const styles = StyleSheet.create({
     padding: 10,
     alignItems: 'center',
   },
+
+  codePart: {
+    color: "black",
+    fontSize: 15,
+  },
+
   userCodeText: {
     fontSize: 20,
     color: "black"
@@ -1011,11 +1033,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   
-  medi: {
-    fontSize: 18,
-    color: 'black',
-    marginBottom: 10,
-  },
 
 });
 
