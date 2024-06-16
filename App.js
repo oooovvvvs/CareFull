@@ -55,7 +55,7 @@ const HomeScreen = ({ navigateTo }) => ( //상단 네비게이션 바
 
     <View style={{ marginBottom: 10, marginTop: 10 }}>
       <ImageBackground source={require('./assets/pill_drop.jpg')} styles={styles.backgroundImage}>
-        <Text style={{ fontSize: 30, fontWeight: 'bold', padding: "1%" }}>금일 복용 횟수</Text>
+        <Text style={{ fontSize: 30, fontWeight: 'bold', padding: "1%", color:'#000'}}>금일 복용 횟수</Text>
         <Text style={styles.daystext}>아침</Text>
         <Text style={styles.daystext}>점심</Text>
         <Text style={styles.daystext}>저녁</Text>
@@ -317,7 +317,7 @@ const PrivateScreen = ({ navigateTo }) => {
     
     
   
-      <View style={styles.nickname}>
+      <View style={styles.nicknamebox}>
       <Text style={{ fontSize: 25, fontWeight: 'bold', color: 'black', marginBottom: 15 }}>닉네임: {name}</Text>
 
       </View>
@@ -546,7 +546,7 @@ const ParentaccountScreen = ({ navigateTo }) => {
         </TouchableOpacity>
       </View>
       <View style={styles.container}>
-        <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>보호자 코드</Text>
+        <Text style={{ fontSize: 25, fontWeight: 'bold', color: 'black', marginBottom: 15 }}>보호자 코드</Text>
         <View style={styles.inputContainer}>
           {[0, 1, 2, 3].map((index) => (
             <React.Fragment key={index}>
@@ -558,7 +558,7 @@ const ParentaccountScreen = ({ navigateTo }) => {
                 value={parentCodes[index]}
                 style={styles.input}
               />
-              {index < 3 && <Text style={styles.hyphen}>-</Text>}
+              {index < 3 && <Text style={styles.codePart}> ＿ </Text>}
             </React.Fragment>
           ))}
         </View>
@@ -720,7 +720,7 @@ const MedicalScreen = ({ navigateTo }) => {
           )}
           ListEmptyComponent={() => (
             <View style={{ alignItems: 'center', marginTop: 20 }}>
-              <Text>연결된 기기가 없습니다.</Text>
+              <Text style={{ color: '#000'}}>연결된 기기가 없습니다.</Text>
             </View>
           )}
         />
@@ -840,10 +840,10 @@ const styles = StyleSheet.create({
   },
   
   nicknamebox: {
-    
+    backgroundColor: '#fff',
     padding: 10,
     textAlign: 'center',
-    width: '80%',
+    width: '100%',
   },
 
   calendarContainer: {
@@ -893,9 +893,12 @@ const styles = StyleSheet.create({
     padding: 10,
     textAlign: 'center',
     width: '20%',
+    fontWeight: 'bold',
+    color: '#000'
+    
   },
   inputContainer: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#fff',
     flexDirection: 'row',
     justifyContent: 'center',
     marginBottom: 15,
@@ -931,6 +934,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
+    color: '#000'
   },
   reminderItem: {
     flexDirection: 'row',
