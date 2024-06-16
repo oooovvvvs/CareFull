@@ -665,22 +665,21 @@ const MedicalScreen = ({ navigateTo }) => {
     }
   };
 
-  const setupNotification = (device) => {
-    device.monitorCharacteristicForService('serviceUUID', 'characteristicUUID', (error, characteristic) => {
-
-      showToast('수신 받았습니다.');
-
-      const receivedValue = new TextDecoder().decode(characteristic.value);
-      console.log('Received data:', receivedValue); // 블루투스로 받은 데이터
-
-      if (receivedValue == 1) {
-        PushNotification.localNotification({
-          message: "신호 받음 알림!", // 푸시 알림 메시지
-        });
-      }
-    });
+  const setupNotification = (receivedValue) => {
+    showToast(`받은 데이터: ${receivedValue}`); // 데이터 값을 먼저 출력
+    if ((receivedValue == '1' || receivedValue == '\x01' || receivedValue == '49')) {
+      showNotification(); // '1'을 받으면 푸시 알림 표시
+      showToast('1 수신 완료');
+    } else {
+      showToast('다시');
+    }
   };
 
+  const showNotification = () => {
+    PushNotification.localNotification({
+      message: '신호 받음 알림!', // 푸시 알림 메시지
+    });
+  };
 
   const handleDeviceDisconnect = async (device) => {
     try {
