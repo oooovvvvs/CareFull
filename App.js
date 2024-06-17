@@ -697,6 +697,7 @@ const MedicalScreen = ({ navigateTo }) => {
     }
   };
 
+   // 커밋용 텍스트 
   useEffect(() => {
     const handleUpdateValueForCharacteristic = (data) => {
       receiveMessage(data.value);
