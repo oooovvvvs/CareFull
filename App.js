@@ -1,6 +1,6 @@
 // App.js
 import React, { useState, useEffect, useRef  } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform ,  BackHandler , ToastAndroid , FlatList } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform ,  BackHandler , ToastAndroid , FlatList, NativeModules , NativeEventEmitter } from 'react-native';
 import {Calendar, LocaleConfig} from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BleManager, Device } from 'react-native-ble-plx';
@@ -11,8 +11,6 @@ import messaging from '@react-native-firebase/messaging';
 import 'react-native-gesture-handler';
 import PushNotification from 'react-native-push-notification'; // 푸쉬 알림
 
-
-// 커밋용 텍스트
 
 //파이어베이스 
 if (!firebase.apps.length) {
@@ -55,7 +53,7 @@ const HomeScreen = ({ navigateTo }) => ( //상단 네비게이션 바
 
     <View style={{ marginBottom: 10, marginTop: 10 }}>
       <ImageBackground source={require('./assets/pill_drop.jpg')} styles={styles.backgroundImage}>
-        <Text style={{ fontSize: 30, fontWeight: 'bold', padding: "1%", color:'#000'}}>금일 복용 횟수</Text>
+        <Text style={{ fontSize: 30, fontWeight: 'bold', padding: "1%" }}>금일 복용 횟수</Text>
         <Text style={styles.daystext}>아침</Text>
         <Text style={styles.daystext}>점심</Text>
         <Text style={styles.daystext}>저녁</Text>
@@ -317,7 +315,7 @@ const PrivateScreen = ({ navigateTo }) => {
     
     
   
-      <View style={styles.nicknamebox}>
+      <View style={styles.nickname}>
       <Text style={{ fontSize: 25, fontWeight: 'bold', color: 'black', marginBottom: 15 }}>닉네임: {name}</Text>
 
       </View>
@@ -546,7 +544,7 @@ const ParentaccountScreen = ({ navigateTo }) => {
         </TouchableOpacity>
       </View>
       <View style={styles.container}>
-        <Text style={{ fontSize: 25, fontWeight: 'bold', color: 'black', marginBottom: 15 }}>보호자 코드</Text>
+        <Text style={{ fontSize: 25, fontWeight: 'bold', color: "black", marginBottom: 15 }}>보호자 코드</Text>
         <View style={styles.inputContainer}>
           {[0, 1, 2, 3].map((index) => (
             <React.Fragment key={index}>
@@ -558,7 +556,7 @@ const ParentaccountScreen = ({ navigateTo }) => {
                 value={parentCodes[index]}
                 style={styles.input}
               />
-              {index < 3 && <Text style={styles.codePart}> ＿ </Text>}
+              {index < 3 && <Text style={styles.hyphen}>-</Text>}
             </React.Fragment>
           ))}
         </View>
@@ -568,126 +566,160 @@ const ParentaccountScreen = ({ navigateTo }) => {
   );
 };
 
+const bleManager = new BleManager();
+const bleManagerEmitter = new NativeEventEmitter(NativeModules.BleManager);
+
 const MedicalScreen = ({ navigateTo }) => {
-  const bleManagerRef = useRef(new BleManager());
-  const [isScanning, setIsScanning] = useState(false);
-  const [connectedDevice, setConnectedDevice] = useState(null);
+  const [connected, setConnected] = useState(false);
+  const [device, setDevice] = useState(null);
+  const [receivedMessages, setReceivedMessages] = useState([]);
   const [connectedDevices, setConnectedDevices] = useState([]);
 
-  const requestBluetoothPermissions = async () => {
+  useEffect(() => {
+    requestPermissions();
+
+    const handleDiscoverPeripheral = (peripheral) => {
+      console.log('Discovered Peripheral:', peripheral);
+    };
+
+    const handleStopScan = () => {
+      console.log('Scan is stopped');
+    };
+
+    const handleConnectPeripheral = (peripheral) => {
+      console.log('Connected to:', peripheral);
+      setConnected(true);
+      setDevice(peripheral);
+      setConnectedDevices((prevDevices) => [...prevDevices, peripheral]);
+    };
+
+    const handleDisconnectPeripheral = (peripheral) => {
+      console.log('Disconnected from:', peripheral);
+      setConnected(false);
+      setDevice(null);
+      setConnectedDevices((prevDevices) => prevDevices.filter((d) => d.id !== peripheral.id));
+    };
+
+    bleManagerEmitter.addListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
+    bleManagerEmitter.addListener('BleManagerStopScan', handleStopScan);
+    bleManagerEmitter.addListener('BleManagerConnectPeripheral', handleConnectPeripheral);
+    bleManagerEmitter.addListener('BleManagerDisconnectPeripheral', handleDisconnectPeripheral);
+
+    return () => {
+      bleManagerEmitter.removeListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
+      bleManagerEmitter.removeListener('BleManagerStopScan', handleStopScan);
+      bleManagerEmitter.removeListener('BleManagerConnectPeripheral', handleConnectPeripheral);
+      bleManagerEmitter.removeListener('BleManagerDisconnectPeripheral', handleDisconnectPeripheral);
+    };
+  }, []);
+
+  const requestPermissions = async () => {
     if (Platform.OS === 'android') {
-      const granted = await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      ]);
-      return (
-        granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] === PermissionsAndroid.RESULTS.GRANTED &&
-        granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] === PermissionsAndroid.RESULTS.GRANTED &&
-        granted[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED
-      );
+      try {
+        const granted = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        ]);
+
+        console.log('Permissions granted:', granted);
+        return (
+          granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] === PermissionsAndroid.RESULTS.GRANTED &&
+          granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] === PermissionsAndroid.RESULTS.GRANTED &&
+          granted[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED
+        );
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
     } else if (Platform.OS === 'ios') {
-      // iOS 권한 요청
-      return true; // iOS에서는 미리 설정되어 있어서 추가적인 권한 요청 없이 사용할 수 있습니다.
+      return true;
     }
     return false;
   };
 
-  const checkBluetoothState = async () => {
-    const state = await bleManagerRef.current.state();
-    if (state !== 'PoweredOn') {
-      Alert.alert('Bluetooth 필요', '블루투스를 켜주세요.');
-      return false;
-    }
-    return true;
-  };
-  
-  const showToast = (message) => {
-    if (Platform.OS === 'android') {
-      ToastAndroid.show(message, ToastAndroid.SHORT);
-    } else {
-      Alert.alert(message);
-    }
-  };
-  
-  const handleRegisterPillBox = async () => {
-    const hasPermission = await requestBluetoothPermissions();
-    if (!hasPermission) {
-      Alert.alert('권한 필요', '블루투스 권한이 필요합니다.');
-      return;
-    }
-
-    const isBluetoothOn = await checkBluetoothState();
-    if (!isBluetoothOn) {
-      return;
-    }
-
+  const connectToHC06 = async () => {
     try {
-      if (isScanning) {
-        bleManagerRef.current.stopDeviceScan();
-      }
-
-      setIsScanning(true);
-
-      bleManagerRef.current.startDeviceScan(null, null, async (error, device) => {
+      bleManager.startDeviceScan(null, null, (error, scannedDevice) => {
         if (error) {
-          console.error('스캔 중 오류 발생:', error);
-          Alert.alert('스캔 오류', '블루투스 스캔 중 오류가 발생했습니다.');
-          setIsScanning(false);git
+          console.error('Device scan error:', error.message);
           return;
         }
 
-        if (device && device.name === 'HC-06') {
-          // HC-06 모듈을 찾으면 연결 시도
-          try {
-            bleManagerRef.current.stopDeviceScan();
-            setIsScanning(false);
-            const connectedDevice = await device.connect();
-            console.log('HC-06 모듈에 연결되었습니다:', connectedDevice);
-            setConnectedDevice(connectedDevice);
-            setConnectedDevices(prevDevices => [...prevDevices, { id: connectedDevice.id, name: connectedDevice.name }]);
-            showToast('HC-06 모듈에 연결 되었습니다');
-            setupNotification(connectedDevice);
-          
-          
-            // 연결 후 필요한 동작을 수행할 수 있습니다.
-          } catch (connectError) {
-            console.error('HC-06 모듈 연결 중 오류 발생:', connectError);
-            Alert.alert('연결 오류', 'HC-06 모듈 연결 중 오류가 발생했습니다.');
-          }
+        console.log('Discovered device:', scannedDevice);
 
+        if (scannedDevice.name === 'HC-06') {
+          bleManager.stopDeviceScan();
+
+          scannedDevice.connect()
+            .then((connectedDevice) => {
+              console.log('Connected to device:', connectedDevice);
+              setConnected(true);
+              setDevice(connectedDevice);
+              setConnectedDevices((prevDevices) => [...prevDevices, connectedDevice]);
+            })
+            .catch((error) => {
+              console.error('Device connection error:', error.message);
+            });
         }
       });
     } catch (error) {
-      console.error('블루투스 스캔 시작 오류:', error);
-      Alert.alert('스캔 시작 오류', '블루투스 스캔을 시작하는 동안 오류가 발생했습니다.');
-      setIsScanning(false);
+      console.error('Device connection error:', error.message);
     }
   };
 
-  const setupNotification = (receivedValue) => {
-    showToast(`받은 데이터: ${receivedValue}`); // 데이터 값을 먼저 출력
-    if ((receivedValue == '1' || receivedValue == '\x01' || receivedValue == '49')) {
-      showNotification(); // '1'을 받으면 푸시 알림 표시
+  const disconnectAllDevices = async () => {
+    try {
+      for (const device of connectedDevices) {
+        await device.cancelConnection();
+        console.log(`Device ${device.name} disconnected`);
+      }
+      setConnected(false);
+      setDevice(null);
+      setConnectedDevices([]);
+      console.log('All Bluetooth devices disconnected');
+    } catch (error) {
+      console.error('Disconnect all devices error:', error.message);
+    }
+  };
+
+  const receiveMessage = (data) => {
+    console.log('Received data:', data);
+    showToast(`받은 데이터: ${data}`); // 데이터 값을 먼저 출력
+
+    setReceivedMessages((prevMessages) => [...prevMessages, data]);
+
+    if (data === '1') {
       showToast('1 수신 완료');
+      console.log('Received data is "1"');
     } else {
-      showToast('다시');
+      ToastAndroid.show('Received other data', ToastAndroid.SHORT);
     }
   };
 
-  const showNotification = () => {
-    PushNotification.localNotification({
-      message: '신호 받음 알림!', // 푸시 알림 메시지
-    });
+  useEffect(() => {
+    const handleUpdateValueForCharacteristic = (data) => {
+      receiveMessage(data.value);
+    };
+
+    bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic);
+
+    return () => {
+      bleManagerEmitter.removeListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic);
+    };
+  }, []);
+
+  const handleRegisterPillBox = () => {
+    connectToHC06();
   };
 
   const handleDeviceDisconnect = async (device) => {
     try {
       await device.cancelConnection();
-      // 연결 해제 후 연결된 기기 목록에서 제거하지 않고 상태 변화 없음
+      setConnectedDevices((prevDevices) => prevDevices.filter((d) => d.id !== device.id));
+      console.log(`Device ${device.name} disconnected`);
     } catch (error) {
-      console.error('기기 연결 해제 중 오류 발생:', error);
-      Alert.alert('연결 해제 오류', '기기 연결 해제 중 오류가 발생했습니다.');
+      console.error(`Device ${device.name} disconnection error:`, error.message);
     }
   };
 
@@ -720,7 +752,7 @@ const MedicalScreen = ({ navigateTo }) => {
           )}
           ListEmptyComponent={() => (
             <View style={{ alignItems: 'center', marginTop: 20 }}>
-              <Text style={{ color: '#000'}}>연결된 기기가 없습니다.</Text>
+              <Text>연결된 기기가 없습니다.</Text>
             </View>
           )}
         />
@@ -840,10 +872,10 @@ const styles = StyleSheet.create({
   },
   
   nicknamebox: {
-    backgroundColor: '#fff',
+    
     padding: 10,
     textAlign: 'center',
-    width: '100%',
+    width: '80%',
   },
 
   calendarContainer: {
@@ -893,12 +925,9 @@ const styles = StyleSheet.create({
     padding: 10,
     textAlign: 'center',
     width: '20%',
-    fontWeight: 'bold',
-    color: '#000'
-    
   },
   inputContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f0f0f0',
     flexDirection: 'row',
     justifyContent: 'center',
     marginBottom: 15,
@@ -934,7 +963,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#000'
   },
   reminderItem: {
     flexDirection: 'row',
@@ -1010,12 +1038,6 @@ const styles = StyleSheet.create({
     padding: 10,
     alignItems: 'center',
   },
-
-  codePart: {
-    color: "black",
-    fontSize: 15,
-  },
-
   userCodeText: {
     fontSize: 20,
     color: "black"
@@ -1032,6 +1054,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   notificationText: {
+    fontSize: 18,
+    color: 'black',
+    marginBottom: 10,
+  },
+
+  medi: {
     fontSize: 18,
     color: 'black',
     marginBottom: 10,
