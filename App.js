@@ -895,7 +895,6 @@ const styles = StyleSheet.create({
     width: '20%',
     fontWeight: 'bold',
     color: '#000'
-    
   },
   inputContainer: {
     backgroundColor: '#fff',
