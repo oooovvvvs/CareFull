@@ -1,11 +1,6 @@
 // App.js
-<<<<<<< Updated upstream
-import React, { useState, useEffect, useRef  } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform ,  BackHandler , ToastAndroid , FlatList, NativeModules , NativeEventEmitter } from 'react-native';
-=======
-import React, { useState, useEffect, useRef, useContext  } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform ,  BackHandler , ToastAndroid , FlatList } from 'react-native';
->>>>>>> Stashed changes
+import React, { useState, useEffect, useRef,  } from 'react';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform ,  BackHandler , ToastAndroid , FlatList, NativeModules, NativeEventEmitter } from 'react-native';
 import {Calendar, LocaleConfig} from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BleManager, Device } from 'react-native-ble-plx';
@@ -102,13 +97,6 @@ const HomeScreen = ({ navigateTo }) => {
       setEveningTime(formattedTime);
     }
     await AsyncStorage.setItem('notificationCount', (notificationCount + 1).toString());
-
-    // Send push notification
-    PushNotification.localNotification({
-      channelId: 'default-channel-id', // 채널 ID 지정
-      title: '복용 알림',
-      message: `복용 시간: ${formattedTime}`,
-    });
   };
 
   return (
@@ -171,12 +159,19 @@ const HomeScreen = ({ navigateTo }) => {
             </View>
           </TouchableOpacity>
         </ScrollView>
-
-        {/* 알림 추가 버튼 */}
-        <TouchableOpacity style={styles.addButton} onPress={() => addNotification('추가')}>
-          <Text style={styles.addButtonText}>알림 추가</Text>
-        </TouchableOpacity>
       </ScrollView>
+      
+      <View style={styles.bottomNavigation}>
+        <TouchableOpacity onPress={() => navigateTo('Home')}>
+          <Image style={styles.bottomIcon} source={require('./assets/pill_00.png')} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigateTo('Home')}>
+          <Image style={styles.bottomIcon} source={require('./assets/Home_Menu.png')} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
+          <Image style={styles.bottomIcon} source={require('./assets/Account.png')} />
+        </TouchableOpacity>
+      </View>
     </>
   );
 };
@@ -264,6 +259,26 @@ const SettingsScreen = ({ navigateTo }) => {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
+    // FCM 초기화
+    initializeFCM();
+
+    // 백그라운드 및 종료 상태에서 알림을 수신했을 때 처리하는 리스너
+    messaging().setBackgroundMessageHandler(async remoteMessage => {
+      await storeNotification(remoteMessage.notification.body); 
+    });
+
+    // 포그라운드 상태에서 알림을 수신했을 때 처리하는 리스너
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      Alert.alert(remoteMessage.notification.title, remoteMessage.notification.body);
+      await storeNotification(remoteMessage.notification.body);
+    });
+
+    // 컴포넌트 언마운트 시 리스너 해제
+    return unsubscribe;
+  }, []);
+
+
+  useEffect(() => {
     const loadNotifications = async () => {
       const storedNotifications = await AsyncStorage.getItem('notifications');
       if (storedNotifications) {
@@ -280,7 +295,7 @@ const SettingsScreen = ({ navigateTo }) => {
         <TouchableOpacity onPress={() => navigateTo('Home')}>
           <Image source={require('./assets/Back_Arrow.png')} style={styles.icon} />
         </TouchableOpacity>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title}>알림</Text>
       </View>
       <View style={styles.notificationsContainer}>
         {notifications.map((notification, index) => (
@@ -696,6 +711,7 @@ const MedicalScreen = ({ navigateTo }) => {
   const [device, setDevice] = useState(null);
   const [receivedMessages, setReceivedMessages] = useState([]);
   const [connectedDevices, setConnectedDevices] = useState([]);
+  const [listeners, setListeners] = useState([]);
 
   useEffect(() => {
     requestPermissions();
@@ -722,16 +738,15 @@ const MedicalScreen = ({ navigateTo }) => {
       setConnectedDevices((prevDevices) => prevDevices.filter((d) => d.id !== peripheral.id));
     };
 
-    bleManagerEmitter.addListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
-    bleManagerEmitter.addListener('BleManagerStopScan', handleStopScan);
-    bleManagerEmitter.addListener('BleManagerConnectPeripheral', handleConnectPeripheral);
-    bleManagerEmitter.addListener('BleManagerDisconnectPeripheral', handleDisconnectPeripheral);
+    const discoverListener = bleManagerEmitter.addListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
+    const stopScanListener = bleManagerEmitter.addListener('BleManagerStopScan', handleStopScan);
+    const connectListener = bleManagerEmitter.addListener('BleManagerConnectPeripheral', handleConnectPeripheral);
+    const disconnectListener = bleManagerEmitter.addListener('BleManagerDisconnectPeripheral', handleDisconnectPeripheral);
+
+    setListeners([discoverListener, stopScanListener, connectListener, disconnectListener]);
 
     return () => {
-      bleManagerEmitter.removeListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
-      bleManagerEmitter.removeListener('BleManagerStopScan', handleStopScan);
-      bleManagerEmitter.removeListener('BleManagerConnectPeripheral', handleConnectPeripheral);
-      bleManagerEmitter.removeListener('BleManagerDisconnectPeripheral', handleDisconnectPeripheral);
+      listeners.forEach(listener => listener.remove());
     };
   }, []);
 
@@ -779,6 +794,7 @@ const MedicalScreen = ({ navigateTo }) => {
               setConnected(true);
               setDevice(connectedDevice);
               setConnectedDevices((prevDevices) => [...prevDevices, connectedDevice]);
+              setupNotification(connectedDevice);
             })
             .catch((error) => {
               console.error('Device connection error:', error.message);
@@ -790,24 +806,33 @@ const MedicalScreen = ({ navigateTo }) => {
     }
   };
 
-  const disconnectAllDevices = async () => {
+  const setupNotification = async (connectedDevice) => {
     try {
-      for (const device of connectedDevices) {
-        await device.cancelConnection();
-        console.log(`Device ${device.name} disconnected`);
+      const services = await bleManager.retrieveServices(connectedDevice.id);
+      const characteristics = services.characteristics;
+
+      for (const characteristic of characteristics) {
+        if (characteristic.isNotifiable) {
+          bleManager.startNotification(
+            connectedDevice.id,
+            characteristic.service,
+            characteristic.characteristic
+          ).then(() => {
+            console.log('Notification started on:', characteristic);
+          }).catch((error) => {
+            console.error('Notification error:', error.message);
+          });
+        }
       }
-      setConnected(false);
-      setDevice(null);
-      setConnectedDevices([]);
-      console.log('All Bluetooth devices disconnected');
     } catch (error) {
-      console.error('Disconnect all devices error:', error.message);
+      console.error('알림 설정 중 오류 발생:', error.message);
+      Alert.alert('알림 설정 오류', '알림 설정 중 오류가 발생했습니다.');
     }
   };
 
   const receiveMessage = (data) => {
     console.log('Received data:', data);
-    showToast(`받은 데이터: ${data}`); // 데이터 값을 먼저 출력
+    showToast(`받은 데이터: ${data}`);
 
     setReceivedMessages((prevMessages) => [...prevMessages, data]);
 
@@ -819,16 +844,16 @@ const MedicalScreen = ({ navigateTo }) => {
     }
   };
 
-   // 커밋용 텍스트 
   useEffect(() => {
     const handleUpdateValueForCharacteristic = (data) => {
       receiveMessage(data.value);
     };
 
-    bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic);
+    const updateValueListener = bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic);
+    setListeners(prevListeners => [...prevListeners, updateValueListener]);
 
     return () => {
-      bleManagerEmitter.removeListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic);
+      updateValueListener.remove();
     };
   }, []);
 
@@ -838,7 +863,7 @@ const MedicalScreen = ({ navigateTo }) => {
 
   const handleDeviceDisconnect = async (device) => {
     try {
-      await device.cancelConnection();
+      await bleManager.cancelConnection(device.id);
       setConnectedDevices((prevDevices) => prevDevices.filter((d) => d.id !== device.id));
       console.log(`Device ${device.name} disconnected`);
     } catch (error) {
@@ -912,25 +937,6 @@ const App = () => {
     return () => backHandler.remove();
   }, [currentScreen, screenStack]);
 
-  useEffect(() => {
-    const createChannel = () => {
-      PushNotification.createChannel(
-        {
-          channelId: 'default-channel-id',
-          channelName: 'Default Channel',
-          channelDescription: 'A default channel',
-          soundName: 'default',
-          importance: 4,
-          vibrate: true,
-        },
-        (created) => console.log(`createChannel returned '${created}'`)
-      );
-    };
-
-    createChannel();
-  }, []);
-
-
   const handleBackPress = () => {
     if (currentScreen === 'Home') {
       const currentTime = Date.now();
@@ -951,7 +957,7 @@ const App = () => {
       return true;
     }
 
-    return false; // 기본 동작을 수행 (앱 종료)
+    return false; // 기본 동작을 수행 (앱 종료 또는 이전 화면으로 이동)
   };
 
   const navigateTo = (screen) => {
@@ -961,12 +967,6 @@ const App = () => {
 
   const renderScreen = () => {
     switch (currentScreen) {
-      case 'Calendar':
-        return <CalendarScreen navigateTo={navigateTo} />;
-      case 'Settings':
-        return <SettingsScreen navigateTo={navigateTo} />;
-      case 'Private':
-        return <PrivateScreen navigateTo={navigateTo} />;
       case 'Parentaccount':
         return <ParentaccountScreen navigateTo={navigateTo} />;
       case 'ParentInfo':
@@ -993,47 +993,110 @@ const App = () => {
 };
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 2,
+    resizeMode: 'cover',
+    marginBottom: 15,
+  },
+  daystext: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    padding: "1%",
+    marginLeft: 5,
+    color: '#000000'
+  },
   container: {
     flex: 1,
+    backgroundColor: '#fff',
     padding: 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 20,
+    padding: 10,
+    backgroundColor: '#fff',
+  },
+  nicknamebox: {
+    padding: 10,
+    textAlign: 'center',
+    width: '80%',
+  },
+  calendarContainer: {
+    flex: 1,
+  },
+  Calendar: {
+    marginTop: 0,
+    flex: 1,
+    backgroundColor: '#fff',
+    dayTextAtIndex0: { color: 'red' },
+    datTextAtOmdex6: { color: 'blue' },
+    zIndex: 1,
+  },
+  Calnotibackground: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  CalnotiList: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 0,
+    padding: 10,
+    backgroundColor: '#f0f8ff',
+    height: '50%',
+  },
+  CalnotiText: {
+    fontSize: 20,
+    margin: 10,
+    fontWeight: 'bold',
+    zIndex: 0,
+    textAlign: 'center',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: 'black',
+    padding: 10,
+    textAlign: 'center',
+    width: '20%',
+  },
+  inputContainer: {
+    backgroundColor: '#f0f0f0',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 15,
+    width: '100%',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: 'black'
   },
   headerIcons: {
+    justifyContent: 'flex-end',
     flexDirection: 'row',
+    position: 'absolute',
+    right: 0,
   },
   icon: {
     width: 24,
     height: 24,
     marginHorizontal: 10,
   },
-  backgroundImage: {
+  banner: {
     width: '100%',
-    height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  daystext: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginTop: 10,
+    height: 150,
   },
   medicationReminder: {
-    marginVertical: 20,
+    marginTop: 10,
+    marginBottom: 10,
+    padding: 10,
+    backgroundColor: '#e0f7fa',
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
   },
@@ -1049,53 +1112,88 @@ const styles = StyleSheet.create({
   },
   reminderText: {
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  reminderTime: {
+    fontSize: 14,
+    color: '#666',
   },
   medicationList: {
-    marginVertical: 20,
+    marginTop: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#fff',
   },
   medicationItem: {
-    marginHorizontal: 10,
+    alignItems: 'center',
+    marginRight: 20,
   },
   medicationImage: {
-    width: 50,
-    height: 50,
+    width: 100,
+    height: 100,
+    marginBottom: 10,
+  },
+  medicationDescription: {
+    textAlign: 'center',
   },
   bottomNavigation: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 10,
-    backgroundColor: '#fff',
+    alignItems: 'center',
+    height: 60,
+    padding: 20,
+    backgroundColor: '#a5d6a7',
     borderTopWidth: 1,
-    borderTopColor: '#ccc',
+    borderTopColor: '#ddd',
   },
   bottomIcon: {
     width: 24,
     height: 24,
   },
-  notificationsContainer: {
-    flex: 1,
-    padding: 20,
-  },
-  notificationItem: {
+  codeContainer: {
     padding: 10,
-    marginBottom: 10,
+    flexDirection: 'row',
     backgroundColor: '#f0f0f0',
     borderRadius: 5,
+    alignItems: 'flex-start',
+    borderColor: '#000',
+    width: '100%',
+    marginBottom: 25,
+  },
+  codePartContainer: {
+    flex: 1,
+    marginHorizontal: 5,
+    borderWidth: 1,
+    borderColor: 'black',
+    padding: 10,
+    alignItems: 'center',
+  },
+  userCodeText: {
+    fontSize: 20,
+    color: "black"
+  },
+  content: {
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    marginVertical: 30,
+  },
+  notificationsContainer: {
+    flex: 1,
   },
   notificationText: {
-    fontSize: 16,
+    fontSize: 18,
+    color: 'black',
+    marginBottom: 10,
   },
-<<<<<<< Updated upstream
-
   medi: {
     fontSize: 18,
     color: 'black',
     marginBottom: 10,
   },
-  
-
-=======
->>>>>>> Stashed changes
 });
 
 export default App;
