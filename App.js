@@ -116,15 +116,15 @@ const HomeScreen = ({ navigateTo }) => {
 
         <View style={{ marginBottom: 10, marginTop: 10 }}>
           <ImageBackground source={require('./assets/pill_drop.jpg')} style={styles.backgroundImage}>
-            <Text style={{ fontSize: 30, fontWeight: 'bold', padding: "1%" }}>금일 복용 횟수</Text>
-            <Text style={styles.daystext}>아침 {morningTime}</Text>
+          <Text style={{ fontSize: 23, fontWeight: 'bold', color: "black", marginBottom: 15 }}>금일 복용 횟수</Text>
+          <Text style={styles.daystext}>아침 {morningTime}</Text>
             <Text style={styles.daystext}>점심 {afternoonTime}</Text>
             <Text style={styles.daystext}>저녁 {eveningTime}</Text>
           </ImageBackground>
         </View>
 
         <View style={styles.medicationReminder}>
-          <Text style={styles.sectionTitle}>복용 알림</Text>
+        <Text style={{ fontSize: 23, fontWeight: 'bold', color: "black", marginBottom: 15 }}>복용 알림</Text>
           <View style={styles.reminderItem}>
             <Image style={styles.reminderIcon} source={require('./assets/pill_00.png')} />
             <View>
@@ -134,7 +134,7 @@ const HomeScreen = ({ navigateTo }) => {
         </View>
 
         <View style={styles.medicationReminder}>
-          <Text style={styles.sectionTitle}>약 잔여량</Text>
+        <Text style={{ fontSize: 23, fontWeight: 'bold', color: "black", marginBottom: 15 }}>약 잔여량</Text>
           <View style={styles.reminderItem}>
             <Image style={styles.reminderIcon} source={require('./assets/pill_00.png')} />
             <View>
