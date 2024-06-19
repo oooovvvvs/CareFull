@@ -1,6 +1,11 @@
 // App.js
+<<<<<<< Updated upstream
 import React, { useState, useEffect, useRef  } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform ,  BackHandler , ToastAndroid , FlatList, NativeModules , NativeEventEmitter } from 'react-native';
+=======
+import React, { useState, useEffect, useRef, useContext  } from 'react';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ImageBackground, TextInput, Button, Alert, PermissionsAndroid, Platform ,  BackHandler , ToastAndroid , FlatList } from 'react-native';
+>>>>>>> Stashed changes
 import {Calendar, LocaleConfig} from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BleManager, Device } from 'react-native-ble-plx';
@@ -37,85 +42,144 @@ const initializeFCM = async () => {
   }
 };
 
-const HomeScreen = ({ navigateTo }) => ( //상단 네비게이션 바
-  <><ScrollView style={styles.container}>
-    <View style={styles.header}>
-      <Text style={styles.title}>carefull</Text>
-      <View style={styles.headerIcons}>
-        <TouchableOpacity onPress={() => navigateTo('Calendar')}>
-          <Image style={styles.icon} source={require('./assets/Calendar.png')} />
+const storeNotification = async (message) => {
+  const storedNotifications = await AsyncStorage.getItem('notifications');
+  const notificationsArray = storedNotifications ? JSON.parse(storedNotifications) : [];
+  notificationsArray.push(message);
+  await AsyncStorage.setItem('notifications', JSON.stringify(notificationsArray));
+};
+
+// 상단 네비게이션 바
+const HomeScreen = ({ navigateTo }) => {
+  const [morningTime, setMorningTime] = useState('');
+  const [afternoonTime, setAfternoonTime] = useState('');
+  const [eveningTime, setEveningTime] = useState('');
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [lastNotificationTime, setLastNotificationTime] = useState('');
+
+  useEffect(() => {
+    const loadTimes = async () => {
+      const morning = await AsyncStorage.getItem('morningTime');
+      const afternoon = await AsyncStorage.getItem('afternoonTime');
+      const evening = await AsyncStorage.getItem('eveningTime');
+      const lastNotification = await AsyncStorage.getItem('lastNotificationTime');
+      const count = await AsyncStorage.getItem('notificationCount');
+
+      if (morning) setMorningTime(morning);
+      if (afternoon) setAfternoonTime(afternoon);
+      if (evening) setEveningTime(evening);
+      if (lastNotification) setLastNotificationTime(lastNotification);
+      if (count) setNotificationCount(parseInt(count));
+    };
+
+    loadTimes();
+  }, []);
+
+  const storeNotification = async (message) => {
+    const storedNotifications = await AsyncStorage.getItem('notifications');
+    const notificationsArray = storedNotifications ? JSON.parse(storedNotifications) : [];
+    notificationsArray.push(message);
+    await AsyncStorage.setItem('notifications', JSON.stringify(notificationsArray));
+  };
+
+  const addNotification = async (timeOfDay) => {
+    const now = new Date();
+    const formattedTime = `${timeOfDay} ${now.getHours()}시 ${now.getMinutes()}분`;
+
+    await storeNotification(`복용 시간: ${formattedTime}`);
+    setLastNotificationTime(formattedTime);
+    await AsyncStorage.setItem('lastNotificationTime', formattedTime);
+    setNotificationCount(prevCount => prevCount + 1);
+
+    if (notificationCount === 0) {
+      await AsyncStorage.setItem('morningTime', formattedTime);
+      setMorningTime(formattedTime);
+    } else if (notificationCount === 1) {
+      await AsyncStorage.setItem('afternoonTime', formattedTime);
+      setAfternoonTime(formattedTime);
+    } else if (notificationCount === 2) {
+      await AsyncStorage.setItem('eveningTime', formattedTime);
+      setEveningTime(formattedTime);
+    }
+    await AsyncStorage.setItem('notificationCount', (notificationCount + 1).toString());
+
+    // Send push notification
+    PushNotification.localNotification({
+      channelId: 'default-channel-id', // 채널 ID 지정
+      title: '복용 알림',
+      message: `복용 시간: ${formattedTime}`,
+    });
+  };
+
+  return (
+    <>
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>carefull</Text>
+          <View style={styles.headerIcons}>
+            <TouchableOpacity onPress={() => navigateTo('Calendar')}>
+              <Image style={styles.icon} source={require('./assets/Calendar.png')} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigateTo('Settings')}>
+              <Image style={styles.icon} source={require('./assets/Alarm.png')} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={{ marginBottom: 10, marginTop: 10 }}>
+          <ImageBackground source={require('./assets/pill_drop.jpg')} style={styles.backgroundImage}>
+            <Text style={{ fontSize: 30, fontWeight: 'bold', padding: "1%" }}>금일 복용 횟수</Text>
+            <Text style={styles.daystext}>아침 {morningTime}</Text>
+            <Text style={styles.daystext}>점심 {afternoonTime}</Text>
+            <Text style={styles.daystext}>저녁 {eveningTime}</Text>
+          </ImageBackground>
+        </View>
+
+        <View style={styles.medicationReminder}>
+          <Text style={styles.sectionTitle}>복용 알림</Text>
+          <View style={styles.reminderItem}>
+            <Image style={styles.reminderIcon} source={require('./assets/pill_00.png')} />
+            <View>
+              <Text style={styles.reminderText}>{lastNotificationTime ? `복용 시간: ${lastNotificationTime}` : '아직 알림이 없습니다.'}</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.medicationReminder}>
+          <Text style={styles.sectionTitle}>약 잔여량</Text>
+          <View style={styles.reminderItem}>
+            <Image style={styles.reminderIcon} source={require('./assets/pill_00.png')} />
+            <View>
+              <Text style={styles.reminderText}></Text>
+            </View>
+          </View>
+        </View>
+        <ScrollView horizontal style={styles.medicationList}>
+          <TouchableOpacity onPress={() => addNotification('아침')}>
+            <View style={styles.medicationItem}>
+              <Image style={styles.medicationImage} source={require('./assets/pill_00.png')} />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => addNotification('점심')}>
+            <View style={styles.medicationItem}>
+              <Image style={styles.medicationImage} source={require('./assets/pill_00.png')} />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => addNotification('저녁')}>
+            <View style={styles.medicationItem}>
+              <Image style={styles.medicationImage} source={require('./assets/pill_00.png')} />
+            </View>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* 알림 추가 버튼 */}
+        <TouchableOpacity style={styles.addButton} onPress={() => addNotification('추가')}>
+          <Text style={styles.addButtonText}>알림 추가</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigateTo('Settings')}>
-          <Image style={styles.icon} source={require('./assets/Alarm.png')} />
-        </TouchableOpacity>
-      </View>
-    </View>
-
-    <View style={{ marginBottom: 10, marginTop: 10 }}>
-      <ImageBackground source={require('./assets/pill_drop.jpg')} styles={styles.backgroundImage}>
-        <Text style={{ fontSize: 30, fontWeight: 'bold', padding: "1%" }}>금일 복용 횟수</Text>
-        <Text style={styles.daystext}>아침</Text>
-        <Text style={styles.daystext}>점심</Text>
-        <Text style={styles.daystext}>저녁</Text>
-      </ImageBackground>
-    </View>
-
-    <View style={styles.medicationReminder}>
-      <Text style={styles.sectionTitle}>복용 알림</Text>
-      <View style={styles.reminderItem}>
-        <Image style={styles.reminderIcon} source={require('./assets/pill_00.png')} />
-        <View>
-          <Text style={styles.reminderText}></Text>
-          <Text style={styles.reminderTime}></Text>
-        </View>
-      </View>
-    </View>
-
-    <View style={styles.medicationReminder}>
-      <Text style={styles.sectionTitle}>약 잔여량</Text>
-      <View style={styles.reminderItem}>
-        <Image style={styles.reminderIcon} source={require('./assets/pill_00.png')} />
-        <View>
-          <Text style={styles.reminderText}></Text>
-          <Text style={styles.reminderTime}></Text>
-        </View>
-      </View>
-    </View>
-    <ScrollView horizontal style={styles.medicationList}>
-      <TouchableOpacity onPress={() => navigateTo('Medication1')}>
-        <View style={styles.medicationItem}>
-          <Image style={styles.medicationImage} source={require('./assets/pill_00.png')} />
-          {/*<Text style={styles.medicationDescription}>아스피린장용정{'\n'}복용한지 지난지 2시간이 지났습니다</Text>*/}
-        </View>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigateTo('Medication2')}>
-        <View style={styles.medicationItem}>
-          <Image style={styles.medicationImage} source={require('./assets/pill_00.png')} />
-          {/*<Text style={styles.medicationDescription}>투통약{'\n'}복용한지 24시간이 지났습니다</Text>*/}
-        </View>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigateTo('Medication3')}>
-        <View style={styles.medicationItem}>
-          <Image style={styles.medicationImage} source={require('./assets/pill_00.png')} />
-          {/*<Text style={styles.medicationDescription}>비타민A{'\n'}복용한지 1일이 지났습니다</Text>*/}
-        </View>
-      </TouchableOpacity>
-    </ScrollView>
-  </ScrollView>
-  
-  
-  <View style={styles.bottomNavigation}> 
-      <TouchableOpacity onPress={() => navigateTo('Home')}>
-        <Image style={styles.bottomIcon} source={require('./assets/pill_00.png')} />
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigateTo('Home')}>
-        <Image style={styles.bottomIcon} source={require('./assets/Home_Menu.png')} />
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigateTo('UserInfo')}>
-        <Image style={styles.bottomIcon} source={require('./assets/Account.png')} />
-      </TouchableOpacity>
-    </View></>
-);
+      </ScrollView>
+    </>
+  );
+};
 
 const BluetoothContext = React.createContext();
 
@@ -128,140 +192,104 @@ const BluetoothProvider = ({ children }) => {
     </BluetoothContext.Provider>
   );
 };
-const storeNotification = async (message) => {
-  const storedNotifications = await AsyncStorage.getItem('notifications');
-  const notificationsArray = storedNotifications ? JSON.parse(storedNotifications) : [];
-  notificationsArray.push(message);
-  await AsyncStorage.setItem('notifications', JSON.stringify(notificationsArray));
-};
-const CalendarScreen = ({ navigateTo }) => { //캘린더
+
+const CalendarScreen = ({ navigateTo }) => {
   LocaleConfig.locales['kr'] = {
     monthNames: [
       '1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'
     ],
-    monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
-    dayNames: ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'],
-    dayNamesShort: ['일', '월', '화', '수', '목', '금', '토'],
-    today: "오늘"
+    monthNamesShort: [
+      '1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'
+    ],
+    dayNames: [
+      '일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'
+    ],
+    dayNamesShort: [
+      '일', '월', '화', '수', '목', '금', '토'
+    ],
   };
-  
+
   LocaleConfig.defaultLocale = 'kr';
+
   const [selected, setSelected] = useState('');
-  const [notifications, setNotifications] = useState([]);
-  const scrollViewRef = useRef();
+  const [notificationHistory, setNotificationHistory] = useState([]);
 
   useEffect(() => {
     const loadNotifications = async () => {
       const storedNotifications = await AsyncStorage.getItem('notifications');
-      const notificationsArray = storedNotifications ? JSON.parse(storedNotifications) : [];
-      setNotifications(notificationsArray);
+      if (storedNotifications) {
+        setNotificationHistory(JSON.parse(storedNotifications));
+      }
     };
+
     loadNotifications();
   }, []);
 
-  const addDummyNotification = async () => {
-    const now = new Date();
-    const formattedTime = `${now.getMonth() + 1}월 ${now.getDate()}일 ${now.getHours()}시 ${now.getMinutes()}분`;
-    const dummyNotification = `가상 알림: ${formattedTime}`;
-    await storeNotification(dummyNotification);
-    setNotifications((prevNotifications) => [...prevNotifications, dummyNotification]);
-    scrollViewRef.current?.scrollToEnd({ animated: true });
-  };
-
   return (
-    <>
+    <ScrollView>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigateTo('Home')}>
-          <Text style={{ fontSize: 30, fontWeight: 'bold', color: "black" }}>← 캘린더</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.calendarContainer}>
-      <View style={styles.Calendar}>
-          <Calendar
-            onDayPress={day => { setSelected(day.dateString); }}
-            markedDates={{ [selected]: { selected: true, disableTouchEvent: true, selectedDotColor: 'orange' } }}
-          />
+        <Text style={styles.title}>Calendar</Text>
+        <View style={styles.headerIcons}>
+          <TouchableOpacity onPress={() => navigateTo('Home')}>
+            <Image style={styles.icon} source={require('./assets/Back_Arrow.png')} />
+          </TouchableOpacity>
         </View>
-        <View style={styles.CalnotiList}>
-          <ScrollView ref={scrollViewRef}>
-            {notifications.map((notification, index) => (
-              <Text key={index} style={styles.CalnotiText}>{notification}</Text>
+      </View>
+      <View>
+        <Calendar
+          onDayPress={(day) => setSelected(day.dateString)}
+          markedDates={{
+            [selected]: { selected: true, disableTouchEvent: true, selectedDotColor: 'orange' },
+          }}
+          theme={{
+            selectedDayBackgroundColor: 'blue',
+            todayTextColor: 'red',
+            arrowColor: 'orange',
+          }}
+        />
+        {notificationHistory.length > 0 && (
+          <View>
+            <Text>Notification History:</Text>
+            {notificationHistory.map((notification, index) => (
+              <Text key={index}>{notification}</Text>
             ))}
-          </ScrollView>
-          <Button title="Add Dummy Notification" onPress={addDummyNotification}/>
-        </View>
-        
-        
-        
+          </View>
+        )}
       </View>
-    </>
+    </ScrollView>
   );
 };
 
-//알림을 저장
-{/*
-const storeNotification = async (notification) => {
-  try {
-    const storedNotifications = await AsyncStorage.getItem('notifications');
-    const notifications = storedNotifications ? JSON.parse(storedNotifications) : [];
-    notifications.push(notification);
-    await AsyncStorage.setItem('notifications', JSON.stringify(notifications));
-  } catch (error) {
-    console.error('알림 저장 중 오류 발생:', error);
-  }
-};
-*/}
-
-//알림화면
 const SettingsScreen = ({ navigateTo }) => {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    // FCM 초기화
-    initializeFCM();
-
-    // 백그라운드 및 종료 상태에서 알림을 수신했을 때 처리하는 리스너
-    messaging().setBackgroundMessageHandler(async remoteMessage => {
-      await storeNotification(remoteMessage.notification.body); 
-    });
-
-    // 포그라운드 상태에서 알림을 수신했을 때 처리하는 리스너
-    const unsubscribe = messaging().onMessage(async remoteMessage => {
-      Alert.alert(remoteMessage.notification.title, remoteMessage.notification.body);
-      await storeNotification(remoteMessage.notification.body);
-    });
-
-    // 컴포넌트 언마운트 시 리스너 해제
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    const fetchNotifications = async () => {
+    const loadNotifications = async () => {
       const storedNotifications = await AsyncStorage.getItem('notifications');
-      setNotifications(storedNotifications ? JSON.parse(storedNotifications) : []);
+      if (storedNotifications) {
+        setNotifications(JSON.parse(storedNotifications));
+      }
     };
-    fetchNotifications();
+
+    loadNotifications();
   }, []);
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigateTo('Home')}>
-          <Text style={{ fontSize: 30, fontWeight: 'bold', color: 'black' }}>← 알림</Text>
+          <Image source={require('./assets/Back_Arrow.png')} style={styles.icon} />
         </TouchableOpacity>
+        <Text style={styles.title}>Settings</Text>
       </View>
       <View style={styles.notificationsContainer}>
-        {notifications.length > 0 ? (
-          notifications.map((notification, index) => (
-            <Text key={index} style={styles.notificationText}>
-              {notification}
-            </Text>
-          ))
-        ) : (
-          <Text style={styles.notificationText}>알림이 없습니다.</Text>
-        )}
+        {notifications.map((notification, index) => (
+          <View key={index} style={styles.notificationItem}>
+            <Text style={styles.notificationText}>{notification}</Text>
+          </View>
+        ))}
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -861,6 +889,11 @@ const App = () => {
   const [screenStack, setScreenStack] = useState(['Home']);
   const [lastBackPress, setLastBackPress] = useState(0);
 
+  
+  useEffect(() => {
+    initializeFCM();
+  }, []);
+
   useEffect(() => {
     const checkUserName = async () => {
       const userName = await AsyncStorage.getItem('userName');
@@ -878,6 +911,25 @@ const App = () => {
 
     return () => backHandler.remove();
   }, [currentScreen, screenStack]);
+
+  useEffect(() => {
+    const createChannel = () => {
+      PushNotification.createChannel(
+        {
+          channelId: 'default-channel-id',
+          channelName: 'Default Channel',
+          channelDescription: 'A default channel',
+          soundName: 'default',
+          importance: 4,
+          vibrate: true,
+        },
+        (created) => console.log(`createChannel returned '${created}'`)
+      );
+    };
+
+    createChannel();
+  }, []);
+
 
   const handleBackPress = () => {
     if (currentScreen === 'Home') {
@@ -941,123 +993,47 @@ const App = () => {
 };
 
 const styles = StyleSheet.create({
-  backgroundImage: {
-    flex: 2,
-    resizeMode: 'cover',
-    marginBottom: 15,
-  },
-  daystext: {
-    fontSize: 18,
-    fontWeight:'bold', 
-    padding:"1%",
-    marginLeft: 5,
-    color: '#000000'
-  },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     padding: 20,
   },
-  
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#fff',
-    
-  },
-  
-  nicknamebox: {
-    
-    padding: 10,
-    textAlign: 'center',
-    width: '80%',
-  },
-
-  calendarContainer: {
-    flex: 1,
-  },
-
-  Calendar: { //캘린더
-    marginTop: 0,
-    flex: 1,
-    backgroundColor: '#fff',
-    dayTextAtIndex0: { color: 'red'},
-    datTextAtOmdex6: { color:'blue'},
-    zIndex: 1,
-    
-  },
-  Calnotibackground: { // 캘린더 알림 목록 백그라운드
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    
-  },
-  CalnotiList:{  //가상알림 목록
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 0,
-    padding: 10,
-    backgroundColor: '#f0f8ff',
-    height: '50%',
-    
-  },
-  CalnotiText: { // 캘린더 알림 리스트
-    fontSize: 20,
-    margin: 10,
-    fontWeight: 'bold',
-    zIndex: 0,
-    textAlign: 'center',
-  },
-
-
-  
-  // 보호자 코드
-  input: {
-    borderWidth: 1,
-    borderColor: 'black',
-    padding: 10,
-    textAlign: 'center',
-    width: '20%',
-  },
-  inputContainer: {
-    backgroundColor: '#f0f0f0',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 15,
-    width: '100%',
+    paddingVertical: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color:'black'
   },
   headerIcons: {
-    justifyContent: 'flex-end',
     flexDirection: 'row',
-    position: 'absolute',
-    right: 0,
   },
   icon: {
     width: 24,
     height: 24,
     marginHorizontal: 10,
   },
-  banner: {
+  backgroundImage: {
     width: '100%',
-    height: 150,
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  daystext: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginTop: 10,
   },
   medicationReminder: {
-    marginTop: 10,
-    marginBottom:10,
-    padding: 10,
-    backgroundColor: '#e0f7fa',
+    marginVertical: 20,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
   },
@@ -1073,88 +1049,43 @@ const styles = StyleSheet.create({
   },
   reminderText: {
     fontSize: 16,
-    fontWeight: 'bold',
-  },
-  reminderTime: {
-    fontSize: 14,
-    color: '#666',
   },
   medicationList: {
-    marginTop: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: '#fff',
+    marginVertical: 20,
   },
   medicationItem: {
-    alignItems: 'center',
-    marginRight: 20,
+    marginHorizontal: 10,
   },
   medicationImage: {
-    width: 100,
-    height: 100,
-    marginBottom: 10,
+    width: 50,
+    height: 50,
   },
-  medicationDescription: {
-    textAlign: 'center',
-  },
-  bottomNavigation: { // 하단 네이게이션바
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  bottomNavigation: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 60,
-    padding: 20,
-    backgroundColor: '#a5d6a7',
+    paddingVertical: 10,
+    backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: '#ddd',
+    borderTopColor: '#ccc',
   },
   bottomIcon: {
     width: 24,
     height: 24,
   },
-
-  //사용자 코드 컨테이너
-  codeContainer: {
-    padding: 10,
-    flexDirection: 'row', // 가로 방향으로 정렬
-    backgroundColor: '#f0f0f0',
-    borderRadius: 5,
-    alignItems: 'flex-start',
-    borderColor: '#000', // 언더바 색상을 설정합니다
-    width: '100%', // 너비를 설정합니다 (필요에 따라 조정하세요)
-    marginBottom: 25, // 하단 여백 추가
-  },
-  codePartContainer: {
-    flex: 1, // 동일한 너비를 가지도록 설정
-    marginHorizontal: 5, // 부분 간 간격 조절
-    borderWidth: 1,
-    borderColor: 'black',
-    padding: 10,
-    alignItems: 'center',
-  },
-  userCodeText: {
-    fontSize: 20,
-    color: "black"
-  },
-
-  content: {
-    justifyContent: 'center',
-    alignItems: 'flex-end', // 오른쪽 정렬로 변경
-    marginVertical: 30, // 버튼을 아래로 내릴 수 있는 여백 조절
-  },
-
-  //알림 화면
   notificationsContainer: {
     flex: 1,
+    padding: 20,
+  },
+  notificationItem: {
+    padding: 10,
+    marginBottom: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
   },
   notificationText: {
-    fontSize: 18,
-    color: 'black',
-    marginBottom: 10,
+    fontSize: 16,
   },
+<<<<<<< Updated upstream
 
   medi: {
     fontSize: 18,
@@ -1163,6 +1094,8 @@ const styles = StyleSheet.create({
   },
   
 
+=======
+>>>>>>> Stashed changes
 });
 
 export default App;
