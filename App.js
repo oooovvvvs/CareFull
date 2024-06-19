@@ -967,6 +967,12 @@ const App = () => {
 
   const renderScreen = () => {
     switch (currentScreen) {
+      case 'Calendar':
+        return <CalendarScreen navigateTo={navigateTo} />;
+      case 'Settings':
+        return <SettingsScreen navigateTo={navigateTo} />;
+      case 'Private':
+        return <PrivateScreen navigateTo={navigateTo} />;
       case 'Parentaccount':
         return <ParentaccountScreen navigateTo={navigateTo} />;
       case 'ParentInfo':
